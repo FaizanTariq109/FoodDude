@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUpRight, MapPin, Search, Coffee, Utensils, CreditCard, Moon, Check, Sparkles } from "lucide-react";
 import { PhotoFrame, RestaurantCard } from "@/components/restaurants/restaurant-card";
-import { photos, places, areas } from "@/data/prototype/restaurants";
+import { photos, enrichRestaurants, areas } from "@/data/prototype/restaurants";
+import type { PublicRestaurant } from "@/lib/data/restaurants";
 import { demoOffers, isOfferValid } from "@/data/prototype/offers";
 import { prototypeCards, prototypeBanks } from "@/data/prototype/banks";
 import { defaultFilters, filtersQuery, type Filters } from "@/lib/discovery";
@@ -13,15 +14,25 @@ import { useLahoreDate } from "@/components/layout/preview-provider";
 function SectionHeading({ eyebrow, title, href, label = "Explore all" }: { eyebrow: string; title: string; href: string; label?: string }) {
   return <div className="section-heading"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div><Link className="text-link" href={href}>{label}<ArrowUpRight size={17} /></Link></div>;
 }
-export function HomeExperience() {
+export function HomeExperience({ restaurants }: { restaurants: PublicRestaurant[] }) {
   const router = useRouter();
   const [filters, setFilters] = useState<Filters>({ ...defaultFilters });
   const [cards, setCards] = useState<string[]>([]);
   const date = useLahoreDate();
   const change = (patch: Partial<Filters>) => setFilters(previous => ({ ...previous, ...patch }));
   const submit = (event: FormEvent) => { event.preventDefault(); router.push("/discover?" + filtersQuery(filters)); };
-  const todays = demoOffers.filter(o => date && isOfferValid(o, date));
+  const places = enrichRestaurants(restaurants);
+  const bySlug = new Map(places.map(place => [place.slug, place]));
+  const todays = demoOffers.filter(o => bySlug.has(o.restaurantSlug) && date && isOfferValid(o, date));
   const deals = [...new Map(todays.map(o => [o.restaurantSlug, o])).values()].slice(0, 4);
+  const returning = ["amu", "basil-bistro", "jhonny-jhugnu", "pret-brasserie"].flatMap(slug => {
+    const place = bySlug.get(slug);
+    return place ? [place] : [];
+  });
+  const cafes = ["brewscape", "double-shot"].flatMap(slug => {
+    const place = bySlug.get(slug);
+    return place?.category === "cafe" ? [place] : [];
+  });
   return <>
     <section className="home-hero container">
       <div className="hero-composition"><div className="hero-copy"><p className="eyebrow"><span className="tiny-dot" /> THE LAHORE EDIT / AFTER HOURS</p><h1>Where are <br />we <em>eating?</em></h1><p>Your Lahore list, a few good finds, and offers<br className="desktop-break" /> for the cards already in your wallet.</p><div className="hero-meta"><span className="hero-line" /><span>GOOD FOOD IS BETTER TOGETHER</span></div></div><div className="hero-image"><PhotoFrame photo={photos.dining} priority sizes="(max-width: 700px) 100vw, 60vw" /><div className="hero-image-shade" /><div className="hero-photo-caption"><span><MapPin size={14} /> A little inspiration for tonight</span><small>Illustrative photography</small></div><div className="hero-stamp"><Utensils size={20} /><span>THE<br />LAHORE<br />LIST</span></div></div></div>
@@ -30,10 +41,10 @@ export function HomeExperience() {
       </form>
       <div className="quick-intents"><span>IN THE MOOD FOR</span><Link href="/discover?tag=Coffee"><Coffee size={15} />Coffee</Link><Link href="/discover?tag=Date+night"><Moon size={15} />Date night</Link><Link href="/discover?tag=Burgers">A good burger</Link><Link href="/discover?min=25&sort=discount">A better deal<ArrowUpRight size={13} /></Link><Link href="/discover?liked=true">An old favourite</Link></div>
     </section>
-    <section className="container home-section"><SectionHeading eyebrow="A LITTLE EXTRA REASON TO GO" title="Good food. Better timing." href="/offers?today=true" label="Today's demo offers" /><div className="section-description"><p>A few offers that fit today. The restaurant still comes first.</p><span className="demo-label">Illustrative, unverified offers</span></div><div className="restaurant-grid home-grid">{deals.length ? deals.map(offer => <RestaurantCard key={offer.id} place={places.find(p => p.slug === offer.restaurantSlug)!} offer={offer} />) : <div className="quiet-empty">{date ? "No demo offers match today. Explore the full list instead." : "Finding today's demo offers…"} <Link href="/offers">Browse offers →</Link></div>}</div></section>
+    <section className="container home-section"><SectionHeading eyebrow="A LITTLE EXTRA REASON TO GO" title="Good food. Better timing." href="/offers?today=true" label="Today's demo offers" /><div className="section-description"><p>A few offers that fit today. The restaurant still comes first.</p><span className="demo-label">Illustrative, unverified offers</span></div><div className="restaurant-grid home-grid">{deals.length ? deals.flatMap(offer => { const place = bySlug.get(offer.restaurantSlug); return place ? [<RestaurantCard key={offer.id} place={place} offer={offer} />] : []; }) : <div className="quiet-empty">{date ? "No demo offers match today. Explore the full list instead." : "Finding today's demo offers…"} <Link href="/offers">Browse offers →</Link></div>}</div></section>
     <section className="container"><div className="tonight-banner"><div className="tonight-copy"><p className="eyebrow"><Moon size={14} /> THE GROUP CHAT, SORTED.</p><h2>Good company.<br /><em>Better options.</em></h2><p>Pick the cards at your table.<br />We’ll find the demo offers that match tonight.</p></div><div className="wallet"><span className="eyebrow">CARDS AT YOUR TABLE</span><div className="wallet-cards">{prototypeCards.map(card => <button key={card.id} className={"wallet-card " + (cards.includes(card.id) ? "selected" : "")} onClick={() => setCards(previous => previous.includes(card.id) ? previous.filter(c => c !== card.id) : [...previous, card.id])} aria-pressed={cards.includes(card.id)}><span className="wallet-bank"><CreditCard size={18} />{prototypeBanks.find(b => b.id === card.bankId)?.name}<span className="wallet-check">{cards.includes(card.id) && <Check size={13} />}</span></span><strong>{card.name}</strong><small>ILLUSTRATIVE CARD MATCHING</small></button>)}</div><Link className="button button-light" href={"/discover?today=true&sort=discount" + (cards.length ? "&card=" + encodeURIComponent(cards.join(",")) : "")}>Find our spot <ArrowUpRight size={17} /></Link></div></div></section>
-    <section className="container home-section journal-section"><SectionHeading eyebrow="FROM YOUR LITTLE BLACK BOOK" title="Worth going back to." href="/places" label="All 74 places" /><div className="restaurant-grid home-grid">{["amu", "basil-bistro", "jhonny-jhugnu", "pret-brasserie"].map(slug => <RestaurantCard key={slug} place={places.find(p => p.slug === slug)!} personal />)}</div></section>
-    <section className="coffee-section"><div className="container coffee-layout"><div className="coffee-copy"><p className="eyebrow"><Coffee size={15} /> A DIFFERENT KIND OF PLAN</p><h2>Shall we<br /><em>get coffee?</em></h2><p>For catch-ups, slow afternoons,<br />and the “one more cup” crowd.</p><Link className="text-link" href="/discover?category=cafe">Find your next coffee spot<ArrowUpRight size={17} /></Link><span className="coffee-doodle"><Sparkles size={32} strokeWidth={1} /></span></div><div className="coffee-cards">{["brewscape", "double-shot"].map(slug => <RestaurantCard key={slug} place={places.find(p => p.slug === slug)!} />)}</div></div></section>
+    <section className="container home-section journal-section"><SectionHeading eyebrow="FROM YOUR LITTLE BLACK BOOK" title="Worth going back to." href="/places" label={`All ${places.length} places`} /><div className="restaurant-grid home-grid">{returning.map(place => <RestaurantCard key={place.slug} place={place} personal />)}</div></section>
+    <section className="coffee-section"><div className="container coffee-layout"><div className="coffee-copy"><p className="eyebrow"><Coffee size={15} /> A DIFFERENT KIND OF PLAN</p><h2>Shall we<br /><em>get coffee?</em></h2><p>For catch-ups, slow afternoons,<br />and the “one more cup” crowd.</p><Link className="text-link" href="/discover?category=cafe">Find your next coffee spot<ArrowUpRight size={17} /></Link><span className="coffee-doodle"><Sparkles size={32} strokeWidth={1} /></span></div><div className="coffee-cards">{cafes.map(place => <RestaurantCard key={place.slug} place={place} />)}</div></div></section>
     <section className="container mood-section"><div><p className="eyebrow">NO PLAN IS A PLAN</p><h2>Go with your mood.</h2></div><div className="mood-links">{["Desi", "Italian", "Rooftop", "Dessert", "Casual"].map((tag, i) => <Link href={"/discover?tag=" + encodeURIComponent(tag)} key={tag}><span>0{i + 1}</span>{tag}<ArrowUpRight size={18} /></Link>)}</div></section>
   </>;
 }
