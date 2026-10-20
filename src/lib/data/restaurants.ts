@@ -10,6 +10,23 @@ export interface PublicRestaurant {
   category: RestaurantCategory;
 }
 
+export async function getRestaurantBySlug(slug: string): Promise<PublicRestaurant | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("id, name, slug, category")
+    .eq("slug", slug)
+    .abortSignal(AbortSignal.timeout(15_000))
+    .maybeSingle();
+
+  if (error) throw new Error("Unable to load restaurant.");
+  if (!data) return null;
+  if (data.category !== "restaurant" && data.category !== "cafe") {
+    throw new Error("Unexpected restaurant category.");
+  }
+  return { id: data.id, name: data.name, slug: data.slug, category: data.category };
+}
+
 export async function getRestaurants(): Promise<PublicRestaurant[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

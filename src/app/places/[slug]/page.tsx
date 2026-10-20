@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { places } from "@/data/prototype/restaurants";
+import { connection } from "next/server";
+import { cache } from "react";
+import { enrichRestaurants } from "@/data/prototype/restaurants";
+import { getRestaurantBySlug, getRestaurants } from "@/lib/data/restaurants";
 import { RestaurantDetail } from "@/components/restaurants/restaurant-detail";
-export function generateStaticParams() { return places.map(place => ({ slug: place.slug })); }
+const getPlace = cache(async (slug: string) => {
+  await connection();
+  const restaurant = await getRestaurantBySlug(slug);
+  if (!restaurant) notFound();
+  return enrichRestaurants([restaurant])[0];
+});
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  return { title: places.find(place => place.slug === slug)?.name ?? "Place not found" };
+  const place = await getPlace(slug);
+  return { title: place.name };
 }
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const place = places.find(place => place.slug === slug);
-  if (!place) notFound();
-  return <RestaurantDetail place={place} />;
+  const place = await getPlace(slug);
+  const source = enrichRestaurants(await getRestaurants());
+  return <RestaurantDetail place={place} source={source} />;
 }
