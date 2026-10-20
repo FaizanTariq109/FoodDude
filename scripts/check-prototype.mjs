@@ -20,7 +20,7 @@ function load(file) {
 }
 const { defaultFilters, filterPlaces, offerMatches } = load(path.join(root, 'src/lib/discovery.ts'));
 const { demoOffers, isOfferValid } = load(path.join(root, 'src/data/prototype/offers.ts'));
-const { places } = load(path.join(root, 'src/data/prototype/restaurants.ts'));
+const { places, enrichRestaurants } = load(path.join(root, 'src/data/prototype/restaurants.ts'));
 const filters = patch => ({ ...defaultFilters, ...patch });
 const find = patch => filterPlaces(filters(patch), '2026-10-19', []).map(p => p.slug);
 assert.equal(places.length, 74);
@@ -43,4 +43,20 @@ assert.equal(isOfferValid(everyday, '2025-12-31'), false);
 const weekend = demoOffers.find(o => o.id === 'demo-fuoco-allied');
 assert.equal(isOfferValid(weekend, '2026-10-18'), true);
 assert.equal(isOfferValid(weekend, '2026-10-19'), false);
+// Database identities must survive prototype enrichment and filtering.
+const canonical = [
+  { id: '00000000-0000-4000-8000-000000000001', slug: 'fuoco', name: 'Canonical renamed cafe', category: 'cafe' },
+  { id: '00000000-0000-4000-8000-000000000002', slug: 'new-public-place', name: 'A new restaurant', category: 'restaurant' },
+];
+const enriched = enrichRestaurants(canonical);
+assert.equal(enriched.length, 2);
+assert.deepEqual(enriched.map(({ id, name, slug, category }) => ({ id, name, slug, category })), canonical);
+assert.ok(enriched[0].demo?.photo);
+assert.equal(enriched[1].demo, undefined);
+assert.deepEqual(filterPlaces(filters({ category: 'cafe' }), null, [], enriched).map(p => p.name), ['Canonical renamed cafe']);
+assert.deepEqual(filterPlaces(filters({ q: 'renamed' }), null, [], enriched).map(p => p.id), [canonical[0].id]);
+assert.deepEqual(filterPlaces(filters({ liked: true }), null, ['fuoco'], enriched).map(p => p.slug), ['fuoco']);
+assert.deepEqual(filterPlaces(filters({ sort: 'az' }), null, [], enriched).map(p => p.slug), ['new-public-place', 'fuoco']);
+assert.deepEqual(filterPlaces(filters({}), null, [], enrichRestaurants([])), []);
 console.log('Prototype checks passed: seed counts, search, combined/group filters, branches, likes, percentages, weekday and date boundaries.');
+console.log('Canonical list checks passed: database identity preserved, slug enrichment, new records, filters, sorting, likes, and no seed fallback.');

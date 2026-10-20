@@ -65,12 +65,106 @@ async function check(name, sql, expectedCode) {
 }
 
 try {
-  const migration = await readFile(new URL("../supabase/migrations/001_initial_schema.sql", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20261020000001_initial_schema.sql", import.meta.url), "utf8");
   const seed = await readFile(new URL("../supabase/seed.sql", import.meta.url), "utf8");
+  // Model permissive legacy defaults, including PUBLIC inheritance, locally.
+  await db.exec(`
+    create role anon;
+    create role authenticated;
+    grant usage on schema public to anon, authenticated;
+    alter default privileges in schema public
+      grant all on tables to anon, authenticated, public;
+  `);
   await db.exec(migration);
   const tables = await db.query("select tablename from pg_tables where schemaname = 'public'");
   assert.equal(tables.rows.length, 14);
+  const rlsMigration = await readFile(new URL("../supabase/migrations/20261020000002_enable_rls.sql", import.meta.url), "utf8");
+  await db.exec(rlsMigration);
+  const publicReadMigrationPath = new URL("../supabase/migrations/20261020000003_public_restaurant_read.sql", import.meta.url);
+  const publicReadMigration = await readFile(publicReadMigrationPath, "utf8");
+  await db.exec(publicReadMigration);
+  const verification = await readFile(new URL("../supabase/verify_rls.sql", import.meta.url), "utf8");
+  const verified = await db.query(verification);
+  assert.equal(verified.rows.length, 14);
+  assert.ok(verified.rows.every((row) => row.table_exists && row.rls_enabled));
+  assert.deepEqual(verified.rows.map((row) => row.table_name).sort(),
+    tables.rows.map((row) => row.tablename).sort());
+  const policy = (await db.query(`select policyname, cmd, roles::text[], qual
+    from pg_policies where schemaname = 'public' and tablename = 'restaurants'`)).rows;
+  assert.equal(policy.length, 1);
+  assert.equal(policy[0].policyname, "Public can read active restaurant basics");
+  assert.equal(policy[0].cmd, "SELECT");
+  assert.deepEqual(policy[0].roles.sort(), ["anon", "authenticated"]);
+  assert.match(policy[0].qual, /is_active/i);
+  assert.equal((await db.query("select count(*)::int as n from pg_policies where schemaname = 'public'")).rows[0].n, 1);
+  assert.match(publicReadMigration, /grant\s+select\s*\(\s*id\s*,\s*name\s*,\s*slug\s*,\s*category\s*\)/i);
+
+  const restaurantColumns = (await db.query(`select attname from pg_attribute
+    where attrelid = 'public.restaurants'::regclass and attnum > 0 and not attisdropped`)).rows;
+  const publicColumns = new Set(["id", "name", "slug", "category"]);
+  for (const role of ["anon", "authenticated"]) {
+    const { rows: [{ tableSelect }] } = await db.query(
+      "select has_table_privilege($1, 'public.restaurants', 'SELECT') as \"tableSelect\"", [role]);
+    assert.equal(tableSelect, false, `${role} must not have table-wide SELECT on restaurants`);
+    for (const { attname } of restaurantColumns) {
+      const { rows: [{ allowed }] } = await db.query(
+        "select has_column_privilege($1, 'public.restaurants', $2, 'SELECT') as allowed", [role, attname]);
+      assert.equal(allowed, publicColumns.has(attname), `${role} SELECT privilege on restaurants.${attname}`);
+      const { rows: [{ writeAllowed }] } = await db.query(
+        "select has_column_privilege($1, 'public.restaurants', $2, 'INSERT,UPDATE,REFERENCES') as \"writeAllowed\"",
+        [role, attname]);
+      assert.equal(writeAllowed, false, `${role} write/reference privilege on restaurants.${attname}`);
+    }
+  }
+  console.log("PASS static migration inspection: migration exists, one SELECT policy targets anon/authenticated, only four columns are granted");
+  passed++;
+
+  for (const role of ["anon", "authenticated"]) {
+    for (const { tablename } of tables.rows) {
+      const { rows: [{ allowed }] } = await db.query(
+        "select has_table_privilege($1, $2, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as allowed",
+        [role, `public.${tablename}`]);
+      assert.equal(allowed, false, `${role} has write/other privileges on ${tablename}`);
+      await db.exec(`set role ${role}`);
+      try {
+        if (tablename === "restaurants") {
+          const publicRows = await db.query("select id, name, slug, category from public.restaurants order by slug");
+          assert.equal(publicRows.rows.length, 0, "fixtures are inserted after privilege checks");
+          assert.ok(publicRows.rows.every((row) => ["id", "name", "slug", "category"].every((column) => column in row)));
+          await assert.rejects(db.query("select personal_notes from public.restaurants"), { code: "42501" });
+          await assert.rejects(db.query("select * from public.restaurants"), { code: "42501" });
+          await assert.rejects(db.exec("insert into public.restaurants(name, slug, category) values ('__unauthorized__', 'unauthorized-test', 'cafe')"), { code: "42501" });
+          await assert.rejects(db.exec("update public.restaurants set name = 'Unauthorized'"), { code: "42501" });
+        } else {
+          await assert.rejects(db.query(`select * from public.${tablename}`), { code: "42501" });
+        }
+        await assert.rejects(db.exec(`delete from public.${tablename}`), { code: "42501" });
+        await assert.rejects(db.exec(`truncate public.${tablename} cascade`), { code: "42501" });
+      } finally {
+        await db.exec("reset role");
+      }
+    }
+  }
+  console.log("PASS effective role tests: both API roles read only active restaurant basic columns; no writes and all other tables restricted");
+  passed++;
   await db.exec(seed);
+  await db.exec(`
+    insert into public.restaurants(id, name, slug, category, is_active) values
+      ('${uid(500)}', '__test active public restaurant__', 'rls-test-active', 'restaurant', true),
+      ('${uid(501)}', '__test inactive public restaurant__', 'rls-test-inactive', 'cafe', false);
+  `);
+  for (const role of ["anon", "authenticated"]) {
+    await db.exec(`set role ${role}`);
+    try {
+      const visible = await db.query("select slug from public.restaurants where slug like 'rls-test-%' order by slug");
+      assert.deepEqual(visible.rows, [{ slug: "rls-test-active" }]);
+      const hiddenInactive = await db.query("select id from public.restaurants where id = $1", [uid(501)]);
+      assert.equal(hiddenInactive.rows.length, 0);
+    } finally {
+      await db.exec("reset role");
+    }
+  }
+  await db.exec(`delete from public.restaurants where id in ('${uid(500)}', '${uid(501)}')`);
   const firstSeed = await db.query("select id, slug, name, category from public.restaurants order by slug");
   await db.exec(seed);
   const secondSeed = await db.query("select id, slug, name, category from public.restaurants order by slug");

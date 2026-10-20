@@ -36,9 +36,9 @@ export function placeMatches(place: Place, filters: Filters, favorites: string[]
     && (!filters.tag || place.demo?.tags.includes(filters.tag))
     && (!filters.liked || favorites.includes(place.slug));
 }
-export function filterPlaces(filters: Filters, date: string | null, favorites: string[]) {
+export function filterPlaces(filters: Filters, date: string | null, favorites: string[], source: Place[] = places) {
   const requiresOffer = filters.bank || filters.card || filters.min || filters.today || filters.type || filters.day;
-  return places.filter(place => placeMatches(place, filters, favorites) && (!requiresOffer || demoOffers.some(offer => offer.restaurantSlug === place.slug && offerMatches(offer, filters, date))))
+  return source.filter(place => placeMatches(place, filters, favorites) && (!requiresOffer || demoOffers.some(offer => offer.restaurantSlug === place.slug && offerMatches(offer, filters, date))))
     .sort((a, b) => {
       if (filters.sort === "az") return a.name.localeCompare(b.name);
       // Seed order is collection order, not an invented factual added-at date.

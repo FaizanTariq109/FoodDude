@@ -48,5 +48,18 @@ export const enrichment: Record<string, Enrichment> = {
 };
 export const places = restaurantsSeed.map((seed, index) => ({ ...seed, slug: seed.id, position: index, demo: enrichment[seed.id] }));
 export type Place = (typeof places)[number];
+/** Only returned records enter the list; demo fields cannot replace identity. */
+export function enrichRestaurants(records: { id: string; name: string; slug: string; category: Place["category"] }[]): Place[] {
+  const positions = new Map(restaurantsSeed.map((seed, index) => [seed.id, index]));
+  return records.map((record, index) => ({
+    id: record.id,
+    name: record.name,
+    slug: record.slug,
+    category: record.category,
+    // Preserve the illustrative collection order for existing sorting controls.
+    position: positions.get(record.slug) ?? restaurantsSeed.length + index,
+    demo: enrichment[record.slug],
+  }));
+}
 export const areas = ["Gulberg", "DHA", "Johar Town", "Old Lahore"];
 export const tags = [...new Set(Object.values(enrichment).flatMap((item) => item.tags))].sort();

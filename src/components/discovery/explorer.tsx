@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, ArrowUpRight, Heart, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { defaultFilters, parseFilters, filterPlaces, offerMatches, placeMatches, type Filters } from "@/lib/discovery";
-import { areas, tags, places } from "@/data/prototype/restaurants";
+import { areas, tags, places, type Place } from "@/data/prototype/restaurants";
 import { demoOffers, dayNames } from "@/data/prototype/offers";
 import { prototypeBanks, prototypeCards } from "@/data/prototype/banks";
 import { RestaurantCard } from "@/components/restaurants/restaurant-card";
@@ -32,18 +32,18 @@ const copy = {
   places: { eyebrow: "YOUR LITTLE BLACK BOOK", title: "Places worth remembering.", description: "74 names. Plenty of reasons to go back. Your Lahore list, finally in one place." },
   offers: { eyebrow: "GOOD FOOD. BETTER TIMING.", title: "Bring the right card.", description: "See what fits the plan. Bank-card deals and restaurant specials, together." },
 };
-export function Explorer({ mode }: { mode: Mode }) {
+export function Explorer({ mode, source = places }: { mode: Mode; source?: Place[] }) {
   const params = useSearchParams();
-  return <ExplorerContent key={params.toString()} mode={mode} initial={{ ...parseFilters(params), sort: params.get("sort") || (mode === "places" ? "az" : "recommended") }} />;
+  return <ExplorerContent key={params.toString()} mode={mode} source={source} initial={{ ...parseFilters(params), sort: params.get("sort") || (mode === "places" ? "az" : "recommended") }} />;
 }
-function ExplorerContent({ mode, initial }: { mode: Mode; initial: Filters }) {
+function ExplorerContent({ mode, initial, source }: { mode: Mode; initial: Filters; source: Place[] }) {
   const [filters, setFilters] = useState(initial);
   const date = useLahoreDate();
   const { favorites } = usePreview();
   const id = useId();
   const change = (patch: Partial<Filters>) => setFilters(previous => ({ ...previous, ...patch }));
   const reset = () => setFilters({ ...defaultFilters, sort: mode === "places" ? "az" : "recommended" });
-  const results = filterPlaces(filters, date, favorites);
+  const results = filterPlaces(filters, date, favorites, source);
   const offers = demoOffers.filter(offer => offerMatches(offer, filters, date) && placeMatches(places.find(p => p.slug === offer.restaurantSlug)!, filters, favorites)).sort((a, b) => filters.sort === "discount" ? (b.discountType === "percentage" ? b.value ?? 0 : 0) - (a.discountType === "percentage" ? a.value ?? 0 : 0) : filters.sort === "az" ? places.find(p => p.slug === a.restaurantSlug)!.name.localeCompare(places.find(p => p.slug === b.restaurantSlug)!.name) : 0);
   const count = mode === "offers" ? offers.length : results.length;
   const active = Object.entries(filters).filter(([key, value]) => key !== "sort" && value);
@@ -57,7 +57,7 @@ function ExplorerContent({ mode, initial }: { mode: Mode; initial: Filters }) {
     return String(value);
   };
   return <div className={"container browse-page browse-" + mode}>
-    <header className="page-intro"><div><p className="eyebrow">{copy[mode].eyebrow}</p><h1>{copy[mode].title}</h1><p className="intro-copy">{copy[mode].description}</p></div><div className="page-aside">{mode === "places" ? <><Heart size={23} strokeWidth={1.4} /><span>A list with a little personality.</span></> : <><span className="live-dot" /><span>Lahore, Pakistan<br /><small>One city. So many possibilities.</small></span></>}</div></header>
+    <header className="page-intro"><div><p className="eyebrow">{copy[mode].eyebrow}</p><h1>{copy[mode].title}</h1><p className="intro-copy">{mode === "places" ? `${source.length} names. Plenty of reasons to go back. Your Lahore list, finally in one place.` : copy[mode].description}</p></div><div className="page-aside">{mode === "places" ? <><Heart size={23} strokeWidth={1.4} /><span>A list with a little personality.</span></> : <><span className="live-dot" /><span>Lahore, Pakistan<br /><small>One city. So many possibilities.</small></span></>}</div></header>
     <p className="prototype-note"><span className="tiny-dot" />{mode === "offers" ? "Demo offer data — illustrative, unverified, and not redeemable." : "Prototype preview · photos, areas, tags and notes are illustrative."}</p>
     <section className="browse-toolbar" aria-label="Browse controls">
       <div className="toolbar-main"><label className="search-field"><Search size={19} /><span className="sr-only">Search restaurants</span><input type="search" placeholder={mode === "offers" ? "Search by restaurant…" : "A name you have in mind…"} value={filters.q} onChange={e => change({ q: e.target.value })} /></label>
