@@ -35,6 +35,8 @@ const mocks = {
   "@supabase/ssr": { createServerClient: (_url, _key, options) => { cookieAdapter = options.cookies; return client; } },
   "@/components/auth/sign-out": { SignOut: () => null },
   "@/components/ui/placeholder-page": { PlaceholderPage: () => null },
+  "@/lib/data/admin-restaurants": { getAdminRestaurants: async () => [] },
+  "@/styles/admin.css": {},
 };
 const modules = new Map();
 function load(file) {
@@ -85,7 +87,7 @@ for (const route of ["/admin", "/admin/login", "/admin/restaurants", "/admin/res
 }
 console.log("PASS admin proxy: anonymous/invalid redirects, members denied, admins allowed, nested/RSC routes, spoofed roles ignored, fail-closed errors/malformed results, cookies/cache headers.");
 cookieAdapter = null;
-for (const file of ["src/app/admin/layout.tsx", "src/app/admin/page.tsx", "src/app/admin/login/page.tsx"]) {
+for (const file of ["src/app/admin/layout.tsx", "src/app/admin/page.tsx", "src/app/admin/restaurants/page.tsx", "src/app/admin/login/page.tsx"]) {
   const render = load(path.resolve(file)).default;
   identity = "anonymous";
   await assert.rejects(render({ children: "protected" }), e => e.destination === "/login");
@@ -94,7 +96,7 @@ for (const file of ["src/app/admin/layout.tsx", "src/app/admin/page.tsx", "src/a
   status = "error"; await assert.rejects(render({ children: "protected" }), /temporarily unavailable/);
   status = true;
   if (file.includes("/login/")) await assert.rejects(render({}), e => e.destination === "/admin");
-  else assert.ok(await render({ children: "protected" }));
+  else assert.ok(await render({ children: "protected", searchParams: Promise.resolve({}) }));
 }
 identity = "member"; status = true; await requireAdmin();
 status = false; await assert.rejects(requireAdmin(), /Access denied/, "revocation is not cached");
