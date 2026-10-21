@@ -102,10 +102,18 @@
   .image-caption { font-size:10px; }
   .image-offer small { font-size:9px; }
   .personal-note { font-size:15px; }
-  .journal-section .restaurant-card { grid-template-columns:.8fr 1fr; gap:17px; }
-  .journal-section .card-visual .photo-frame { aspect-ratio:.72; }
-  .journal-section .image-caption { top:auto; bottom:8px; font-size:9px; left:5px; }
-  .journal-section .card-title h3 { font-size:21px; }
+  /* Match the section's desktop selector so its two-column grid cannot win. */
+  .journal-section .home-grid { grid-template-columns:minmax(0,1fr); gap:24px; }
+  .journal-section .section-heading { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+  .journal-section .section-heading .text-link { justify-self:start; max-width:none; min-height:44px; white-space:nowrap; padding-block:8px; }
+  .journal-section .restaurant-card { grid-template-columns:clamp(88px,26vw,112px) minmax(0,1fr); gap:16px; align-items:start; }
+  .journal-section .card-content { min-width:0; overflow-wrap:anywhere; }
+  .journal-section .card-visual .photo-frame { aspect-ratio:4/5; }
+  .journal-section .image-caption { top:auto; bottom:8px; font-size:9px; line-height:1.35; left:5px; right:5px; width:fit-content; max-width:calc(100% - 10px); padding:3px 4px; }
+  .journal-section .card-title { align-items:start; }
+  .journal-section .card-title h3 { min-width:0; font-size:21px; }
+  .journal-section .card-location { align-items:start; line-height:1.5; }
+  .journal-section .card-location svg { flex-shrink:0; margin-top:2px; }
   .journal-section .personal-note { font-size:13px; }
   .tonight-banner { padding:27px 20px; gap:24px; }
   .tonight-copy h2 { font-size:34px; }
