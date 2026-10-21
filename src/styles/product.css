@@ -1,3 +1,21 @@
+.card-description {
+  margin-top:10px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.75;
+  overflow-wrap:anywhere;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  overflow:hidden
+}
+.card-price { margin-top:8px; color:var(--accent); font-size:12px; }
+.official-restaurant { margin-bottom:28px; padding:24px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); }
+.official-restaurant .eyebrow { color:var(--muted); margin-bottom:12px; }
+.official-description { max-width:800px; line-height:1.8; overflow-wrap:anywhere; white-space:pre-line; }
+.official-price { margin-top:14px; color:var(--accent); }
+.official-links { display:flex; align-items:center; flex-wrap:wrap; gap:12px 24px; margin-top:14px; }
+.official-links a { display:inline-flex; align-items:center; gap:6px; min-height:44px; color:var(--accent); text-decoration:underline; text-underline-offset:4px; }
 .browse-page {
   padding-top:56px;
   padding-bottom:60px

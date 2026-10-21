@@ -1,4 +1,5 @@
 import { restaurantsSeed } from "@/data/restaurants.seed";
+import type { PublicRestaurant } from "@/lib/data/restaurants";
 
 export const photos = {
   dining: { src: "/images/prototype/dining-room.jpg", alt: "Illustrative restaurant interior with warm lights and communal tables" },
@@ -16,7 +17,6 @@ export interface Enrichment {
   gallery?: Photo[];
   area: string;
   tags: string[];
-  description: string;
   note: string;
   liked: string[];
   favorite?: boolean;
@@ -24,7 +24,6 @@ export interface Enrichment {
 }
 const setting = (photo: Photo, area: string, tags: string[], note: string, liked: string[], favorite = false): Enrichment => ({
   photo, area, tags, note, liked, favorite,
-  description: "An unhurried meal, a few good conversations, and a reason to stay a little longer. A little inspiration for your next Lahore plan.",
   branches: [{ id: "main", area, label: area + " · example branch" }],
 });
 // Everything below is illustrative UI content, not factual restaurant information.
@@ -46,16 +45,24 @@ export const enrichment: Record<string, Enrichment> = {
   "red-berry-roasters-the-experience-lab": setting(photos.cafe, "Gulberg", ["Coffee", "Brunch"], "Make room for a second cup.", ["A slow brew"]),
   "cafe-bru": setting(photos.coffee, "DHA", ["Coffee", "Dessert"], "A familiar ritual, a different corner of the city.", ["Coffee", "Dessert"]),
 };
-export const places = restaurantsSeed.map((seed, index) => ({ ...seed, slug: seed.id, position: index, demo: enrichment[seed.id] }));
-export type Place = (typeof places)[number];
-/** Only returned records enter the list; demo fields cannot replace identity. */
-export function enrichRestaurants(records: { id: string; name: string; slug: string; category: Place["category"] }[]): Place[] {
+export interface Place extends PublicRestaurant {
+  position: number;
+  demo?: Enrichment;
+}
+export const places: Place[] = restaurantsSeed.map((seed, index) => ({ ...seed, slug: seed.id, position: index, demo: enrichment[seed.id],
+  short_description: null, price_level: null, website_url: null, instagram_url: null }));
+/** Only returned records enter the list; demo fields never replace official data. */
+export function enrichRestaurants(records: PublicRestaurant[]): Place[] {
   const positions = new Map(restaurantsSeed.map((seed, index) => [seed.id, index]));
   return records.map((record, index) => ({
     id: record.id,
     name: record.name,
     slug: record.slug,
     category: record.category,
+    short_description: record.short_description ?? null,
+    price_level: record.price_level ?? null,
+    website_url: record.website_url ?? null,
+    instagram_url: record.instagram_url ?? null,
     // Preserve the illustrative collection order for existing sorting controls.
     position: positions.get(record.slug) ?? restaurantsSeed.length + index,
     demo: enrichment[record.slug],

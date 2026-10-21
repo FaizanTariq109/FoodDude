@@ -110,8 +110,8 @@ begin
     raise exception 'Anonymous privileged read was not denied';
   exception when insufficient_privilege then null; end;
   begin
-    perform r.website_url from public.restaurants r;
-    raise exception 'Public official metadata was not denied';
+    perform r.personal_notes from public.restaurants r;
+    raise exception 'Public legacy personal data was not denied';
   exception when insufficient_privilege then null; end;
 end;
 $$;

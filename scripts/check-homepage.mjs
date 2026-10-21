@@ -41,13 +41,15 @@ function nodes(tree) {
 }
 const { HomeExperience } = load(path.resolve("src/components/discovery/home-experience.tsx"));
 const { places, enrichment } = load(path.resolve("src/data/prototype/restaurants.ts"));
-const records = places.map(p => ({ id: "live-" + p.slug, slug: p.slug, name: "Live " + p.name, category: p.category }));
+const records = places.map(p => ({ id: "live-" + p.slug, slug: p.slug, name: "Live " + p.name, category: p.category,
+  short_description: "Official " + p.slug, price_level: 2, website_url: "https://example.com", instagram_url: null }));
 const render = restaurants => { cursor = 0; return nodes(HomeExperience({ restaurants })); };
 const full = render(records);
 const cards = full.filter(n => n.type === Card);
 assert.ok(cards.length > 6);
 for (const { props: { place, offer } } of cards) {
-  assert.deepEqual(records.find(p => p.slug === place.slug), { id: place.id, slug: place.slug, name: place.name, category: place.category });
+  const official = records.find(p => p.slug === place.slug);
+  for (const key of Object.keys(official)) assert.equal(place[key], official[key]);
   assert.equal(place.demo, enrichment[place.slug]);
   if (offer) assert.equal(offer.restaurantSlug, place.slug);
 }

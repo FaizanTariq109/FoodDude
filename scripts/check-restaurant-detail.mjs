@@ -34,10 +34,17 @@ function load(file) {
   modules.set(file, mod.exports); return mod.exports;
 }
 const data = load(path.resolve("src/lib/data/restaurants.ts"));
-const canonical = { id: "live-id", slug: "fuoco", name: "Live renamed cafe", category: "cafe" };
+const canonical = { id: "live-id", slug: "fuoco", name: "Live renamed cafe", category: "cafe",
+  short_description: "Official edited description", price_level: 3,
+  website_url: "https://example.com", instagram_url: "https://instagram.com/example" };
 response = { data: canonical, error: null };
 assert.deepEqual(await data.getRestaurantBySlug("fuoco"), canonical);
-assert.ok(calls.some(([key, value]) => key === "select" && value === "id, name, slug, category"));
+const columns = "id, name, slug, category, short_description, price_level, website_url, instagram_url";
+assert.ok(calls.some(([key, value]) => key === "select" && value === columns));
+response = { data: [{ ...canonical, personal_notes: "PRIVATE", is_favorite: true, updated_at: "PRIVATE" }], error: null };
+assert.deepEqual(await data.getRestaurants(), [canonical], "public adapter allowlists only permitted fields");
+response = { data: { ...canonical, short_description: "Second request description" }, error: null };
+assert.equal((await data.getRestaurantBySlug("fuoco")).short_description, "Second request description");
 assert.ok(calls.some(([key, column, value]) => key === "eq" && column === "slug" && value === "fuoco"));
 response = { data: null, error: null };
 assert.equal(await data.getRestaurantBySlug("missing"), null);
@@ -65,6 +72,8 @@ const page = await route.default(props("fuoco"));
 assert.equal(page.type, Detail);
 assert.equal(page.props.place.name, canonical.name);
 assert.equal(page.props.place.category, "cafe");
+assert.equal(page.props.place.short_description, canonical.short_description);
+assert.equal(page.props.place.website_url, canonical.website_url);
 assert.equal(page.props.place.demo.gallery.length, 3);
 assert.deepEqual(page.props.source.map(p => p.id), rows.map(p => p.id));
 assert.equal((await route.default(props("brand-new-slug"))).props.place.name, "New cafe");
