@@ -18,7 +18,7 @@ function ActiveNavigation({ mobile = false, pathname }: { mobile?: boolean; path
   const params = useSearchParams();
   return <NavigationItems mobile={mobile} pathname={pathname} tonight={pathname === "/discover" && params.get("today") === "true"} />;
 }
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, accountNavigation }: { children: ReactNode; accountNavigation: ReactNode }) {
   const pathname = usePathname();
   return <PreviewProvider>
     <a href="#main-content" className="skip-link">Skip to content</a>
@@ -26,6 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="rail-brand"><Link href="/" className="wordmark" aria-label="FoodDude home">{brand.name}<span>.</span></Link><span className="brand-edition">AFTER HOURS</span></div>
       <span className="mobile-location"><MapPin size={13} />Lahore</span>
       <Suspense fallback={<NavigationItems pathname={pathname} />}><ActiveNavigation pathname={pathname} /></Suspense>
+      <div className="account-navigation">{accountNavigation}</div>
       <div className="rail-tonight"><span className="eyebrow">MAKE A NIGHT OF IT</span><Link href="/discover?today=true" className="tonight-link"><Moon size={20} /><span>Tonight</span><ArrowUpRight size={17} /></Link><p>Good company.<br />Somewhere worth going.</p></div>
       <div className="rail-bottom"><Sparkles size={30} strokeWidth={1} /><p>A little appetite.<br />A lot of Lahore.</p><span className="location"><MapPin size={14} /> Lahore, Pakistan</span></div>
     </header>
