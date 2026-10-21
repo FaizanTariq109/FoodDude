@@ -110,5 +110,48 @@ try {
     const config = await readFile(new URL("../supabase/config.toml", import.meta.url), "utf8");
     assert.match(config, /schemas = \["public", "graphql_public"\]/);
   });
-  console.log(`All ${passed} offline auth foundation checks passed. No live database used.`);
+  // Apply the additive RPC after validating the unchanged foundation.
+  const permissionsBeforeRpc = await query(`select c.oid, c.relacl::text,
+    (select json_agg(p order by p.policyname) from pg_policies p
+      where p.schemaname=n.nspname and p.tablename=c.relname)::text as policies
+    from pg_class c join pg_namespace n on n.oid=c.relnamespace
+    where n.nspname in ('public','private') and c.relkind='r' order by c.oid`);
+  await db.exec(await readFile(new URL("../supabase/migrations/20261021000005_admin_status_rpc.sql", import.meta.url), "utf8"));
+  await check("RPC preserves every table ACL and RLS policy", async () => {
+    assert.deepEqual(await query(`select c.oid, c.relacl::text,
+      (select json_agg(p order by p.policyname) from pg_policies p
+        where p.schemaname=n.nspname and p.tablename=c.relname)::text as policies
+      from pg_class c join pg_namespace n on n.oid=c.relnamespace
+      where n.nspname in ('public','private') and c.relkind='r' order by c.oid`), permissionsBeforeRpc);
+  });
+  await check("RPC returns only caller boolean; assignment/revocation is immediate", async () => {
+    await db.exec(`insert into auth.users(id) values ('${charlie}');
+      insert into private.admin_memberships(user_id) values ('${alice}');`);
+    for (const [id, expected] of [[alice, true], [charlie, false], [null, false]]) {
+      await as("authenticated", id, async () => {
+        assert.deepEqual(await query("select public.current_user_is_admin() as admin"), [{ admin: expected }]);
+        await denied("select * from private.admin_memberships");
+        await denied(`insert into private.admin_memberships(user_id) values ('${charlie}')`);
+      });
+    }
+    await db.exec("delete from private.admin_memberships;");
+    await as("authenticated", alice, async () => assert.deepEqual(await query("select public.current_user_is_admin() as admin"), [{ admin: false }]));
+    for (const role of ["anon", "service_role"]) await as(role, alice, () => denied("select public.current_user_is_admin()"));
+    await assert.rejects(db.query(`select public.current_user_is_admin('${alice}'::uuid)`), { code: "42883" });
+  });
+  await check("RPC has hardened invoker privileges and does not grant catalogue writes", async () => {
+    const [fn] = await query(`select p.prosecdef, p.proconfig, p.pronargs, p.prorettype::regtype::text as result,
+      r.rolname from pg_proc p join pg_roles r on r.oid=p.proowner
+      where p.oid='public.current_user_is_admin()'::regprocedure`);
+    assert.equal(fn.prosecdef, false); assert.equal(fn.rolname, "postgres");
+    assert.equal(fn.pronargs, 0); assert.equal(fn.result, "boolean");
+    assert.ok(fn.proconfig.includes('search_path=""'));
+    await db.exec(`insert into public.restaurants(id,name,slug,category) values ('${bob}','Catalogue test','catalogue-test','restaurant');`);
+    for (const role of ["anon", "authenticated"]) await as(role, alice, async () => {
+      assert.equal((await query("select id,name,slug,category from public.restaurants")).length, 1);
+      await denied("select personal_notes from public.restaurants");
+      await denied("update public.restaurants set name='Unauthorized'");
+    });
+  });
+  console.log(`All ${passed} offline auth foundation/RPC checks passed. No live database used.`);
 } finally { await db.close(); }

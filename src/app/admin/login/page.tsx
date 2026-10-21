@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/ui/placeholder-page";
+import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 export const metadata: Metadata = { title: "Admin login" };
 
-export default function Page() {
-  return <PlaceholderPage title="Admin login" description="Administrator sign-in will live here. Authentication is not implemented yet." />;
+export default async function Page() {
+  await requireAdmin();
+  redirect("/admin");
 }

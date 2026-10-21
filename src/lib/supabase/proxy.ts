@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import WebSocket from "ws";
 import { getSupabaseEnv } from "./env";
+import { getAdminAccess } from "@/lib/auth/admin";
 
 export async function updateSession(request: NextRequest) {
   const { url, publishableKey } = getSupabaseEnv();
@@ -26,6 +27,29 @@ export async function updateSession(request: NextRequest) {
       },
     },
   });
+  // Cover direct requests, client navigations and RSC requests for every child.
+  // Page/data guards remain necessary: proxy visibility is not data authorization.
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const access = await getAdminAccess(supabase);
+    if (access !== "admin") {
+      const blocked = access === "anonymous"
+        ? NextResponse.redirect(new URL("/login", request.url))
+        : new NextResponse(access === "denied" ? "Access denied." : "Administrator access is temporarily unavailable. Please try again later.", {
+          status: access === "denied" ? 403 : 503,
+          headers: { "Content-Type": "text/plain; charset=utf-8" },
+        });
+      // Preserve refresh/deletion cookies without copying middleware-next headers.
+      response.cookies.getAll().forEach(cookie => blocked.cookies.set(cookie));
+      for (const header of ["cache-control", "expires", "pragma"]) {
+        const value = response.headers.get(header);
+        if (value) blocked.headers.set(header, value);
+      }
+      blocked.headers.set("Cache-Control", "private, no-store");
+      return blocked;
+    }
+    return response;
+  }
   try {
     await supabase.auth.getClaims();
   } catch {
