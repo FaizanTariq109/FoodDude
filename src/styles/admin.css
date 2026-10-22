@@ -1,4 +1,12 @@
 .admin-page { padding-block:56px 70px; }
+.admin-branches { margin-top:64px; display:grid; gap:24px; scroll-margin-top:30px; }
+.admin-branch-list { display:grid; gap:20px; }
+.admin-branches .admin-panel { min-width:0; overflow-wrap:anywhere; }
+.admin-branches details { width:100%; }
+.admin-branches summary { cursor:pointer; color:var(--accent); min-height:44px; padding-block:12px; }
+.admin-branches .admin-editor { margin-top:16px; width:100%; }
+.admin-coordinates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+@media(max-width:600px) { .admin-coordinates { grid-template-columns:1fr; } .admin-branches .admin-editor fieldset { padding:16px; } }
 .admin-add { margin-bottom:24px; }
 .admin-row-actions { display:grid; justify-items:start; gap:12px; margin-top:18px; }
 .admin-row-actions button { background:transparent; min-height:44px; }

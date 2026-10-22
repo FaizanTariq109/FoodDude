@@ -18,6 +18,7 @@ const mocks = {
   "next/server": { connection: async () => {} },
   "next/navigation": { notFound: () => { throw new Error("NOT_FOUND"); } },
   react: { ...require("react"), cache: fn => fn },
+  "@/lib/data/branches": { getPublicBranches: async () => [] },
 };
 const modules = new Map();
 function load(file) {
@@ -52,7 +53,12 @@ response = { data: null, error: { code: "42501" } };
 await assert.rejects(data.getRestaurantBySlug("fuoco"), /Unable to load restaurant/);
 response = { data: { ...canonical, category: "invalid" }, error: null };
 await assert.rejects(data.getRestaurantBySlug("fuoco"), /Unexpected restaurant category/);
-let missing = false, fail = false;
+let missing = false, fail = false, branchFailure = false;
+const branch = { id: "fixture-branch", restaurant_id: canonical.id, name: "Verified fixture branch", area: "Fixture area", address: "Fixture address", phone: null, google_maps_url: null, latitude: null, longitude: null };
+mocks["@/lib/data/branches"] = { getPublicBranches: async id => {
+  if (branchFailure) throw Error("SECRET BRANCH ERROR");
+  return id === canonical.id ? [branch] : [];
+} };
 const rows = [canonical, { id: "new-id", slug: "brand-new-slug", name: "New cafe", category: "cafe" },
   { id: "live-brewscape", slug: "brewscape", name: "Live Brewscape", category: "cafe" }];
 const Detail = () => null;
@@ -75,6 +81,14 @@ assert.equal(page.props.place.category, "cafe");
 assert.equal(page.props.place.short_description, canonical.short_description);
 assert.equal(page.props.place.website_url, canonical.website_url);
 assert.equal(page.props.place.demo.gallery.length, 3);
+assert.deepEqual(page.props.branches, [branch]);
+assert.equal(page.props.branchesUnavailable, false);
+branchFailure = true;
+const branchErrorPage = await route.default(props("fuoco"));
+assert.deepEqual(branchErrorPage.props.branches, []);
+assert.equal(branchErrorPage.props.branchesUnavailable, true);
+assert.equal(branchErrorPage.props.place.short_description, canonical.short_description);
+branchFailure = false;
 assert.deepEqual(page.props.source.map(p => p.id), rows.map(p => p.id));
 assert.equal((await route.default(props("brand-new-slug"))).props.place.name, "New cafe");
 missing = true;
