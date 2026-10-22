@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Bookmark, MapPin, Quote, ArrowRight, Image as ImageIcon, Check } from "lucide-react";
 import { FavoriteButton, PhotoFrame, RestaurantCard } from "./restaurant-card";
@@ -11,7 +11,7 @@ import { RestaurantBranches } from "./restaurant-branches";
 import type { PublicBranch } from "@/lib/branches";
 import { officialRestaurantUrl, priceLevelLabel } from "@/lib/restaurants/official";
 
-export function RestaurantDetail({ place, source, branches = [], branchesUnavailable = false }: { place: Place; source: Place[]; branches?: PublicBranch[]; branchesUnavailable?: boolean }) {
+export function RestaurantDetail({ place, source, branches = [], branchesUnavailable = false, saveControl }: { place: Place; source: Place[]; branches?: PublicBranch[]; branchesUnavailable?: boolean; saveControl?: ReactNode }) {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const website = officialRestaurantUrl(place.website_url);
   const instagram = officialRestaurantUrl(place.instagram_url);
@@ -19,8 +19,9 @@ export function RestaurantDetail({ place, source, branches = [], branchesUnavail
   const offers = demoOffers.filter(o => o.restaurantSlug === place.slug);
   const similar = source.filter(p => p.slug !== place.slug && p.category === place.category && p.demo).sort((a, b) => a.position - b.position).slice(0, 3);
   return <div className="container detail-page">
-    <Link href="/places" className="back-link"><ArrowLeft size={15} />Back to your places</Link>
-    <div className="detail-heading"><div><p className="eyebrow">{place.category}</p><h1>{place.name}</h1><p className="detail-location"><MapPin size={16} />{place.demo?.area ?? "Lahore"}{place.demo && " · example area"}<span>·</span><Bookmark size={15} />On your list</p></div><FavoriteButton slug={place.slug} name={place.name} large /></div>
+    <Link href="/places" className="back-link"><ArrowLeft size={15} />Back to places</Link>
+    <div className="detail-heading"><div><p className="eyebrow">{place.category}</p><h1>{place.name}</h1><p className="detail-location"><MapPin size={16} />{place.demo?.area ?? "Lahore"}{place.demo && " · example area"}<span>·</span><Bookmark size={15} />Public catalogue</p></div><FavoriteButton slug={place.slug} name={place.name} large /></div>
+    {saveControl}
     <section className="official-restaurant" aria-label="Official restaurant information">
       <p className="eyebrow">From the restaurant catalogue</p>
       <p className="official-description">{place.short_description?.trim() || "No official description has been added yet."}</p>
@@ -38,7 +39,7 @@ export function RestaurantDetail({ place, source, branches = [], branchesUnavail
     <div className="detail-columns"><div className="detail-main">
       <section className="detail-section"><div className="section-heading"><h2>What I liked.</h2>{place.demo && <span className="demo-label">Example notes</span>}</div>{place.demo ? <><div className="note-card"><Quote size={23} strokeWidth={1.4} /><p>{place.demo.note}</p><span>A LITTLE NOTE TO SELF · DEMO</span></div><div className="recommendations">{place.demo.liked.map(item => <span key={item}><Check size={15} />{item}</span>)}</div></> : <p className="quiet-empty">No recommendations yet. A fresh page for a future visit.</p>}</section>
       <section className="detail-section" id="offers"><div className="section-heading"><div><p className="eyebrow">A LITTLE EXTRA REASON</p><h2>Offers at the table.</h2></div><span className="demo-label">Demo offers</span></div><p className="muted detail-offer-note">Illustrative only. Check actual availability with the restaurant and bank.</p>{offers.length ? <div className="detail-offers">{offers.map(offer => <OfferCard key={offer.id} offer={offer} compact />)}</div> : <p className="quiet-empty">No demo offers for this place. Good food is still a good plan.</p>}</section>
-    </div><aside className="detail-sidebar"><RestaurantBranches branches={branches} unavailable={branchesUnavailable} /><div className="sidebar-note"><Bookmark size={20} /><p>One of {source.length} places<br />on your Lahore list.</p><Link href="/places">The whole collection<ArrowRight size={14} /></Link></div></aside></div>
-    {similar.length > 0 && <section className="home-section"><div className="section-heading"><div><p className="eyebrow">KEEP THE OPTIONS OPEN</p><h2>More from your list.</h2></div><Link className="text-link" href="/places">View all<ArrowUpRight size={16} /></Link></div><div className="restaurant-grid similar-grid">{similar.map(p => <RestaurantCard key={p.slug} place={p} />)}</div></section>}
+    </div><aside className="detail-sidebar"><RestaurantBranches branches={branches} unavailable={branchesUnavailable} /><div className="sidebar-note"><Bookmark size={20} /><p>One of {source.length} places<br />in the public catalogue.</p><Link href="/places">Explore all places<ArrowRight size={14} /></Link></div></aside></div>
+    {similar.length > 0 && <section className="home-section"><div className="section-heading"><div><p className="eyebrow">KEEP THE OPTIONS OPEN</p><h2>More places to explore.</h2></div><Link className="text-link" href="/places">View all<ArrowUpRight size={16} /></Link></div><div className="restaurant-grid similar-grid">{similar.map(p => <RestaurantCard key={p.slug} place={p} />)}</div></section>}
   </div>;
 }

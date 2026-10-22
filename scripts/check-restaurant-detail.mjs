@@ -19,6 +19,7 @@ const mocks = {
   "next/navigation": { notFound: () => { throw new Error("NOT_FOUND"); } },
   react: { ...require("react"), cache: fn => fn },
   "@/lib/data/branches": { getPublicBranches: async () => [] },
+  "@/components/lists/save-restaurant": { SaveRestaurant: () => null },
 };
 const modules = new Map();
 function load(file) {

@@ -13,6 +13,6 @@ export async function AccountNavigation() {
     if (authenticated) admin = await getAdminAccess(supabase) === "admin";
   } catch { /* Public navigation remains available during Auth outages. */ }
   return <nav aria-label="Account" className="account-links">
-    {authenticated ? <>{admin && <Link href="/admin">Admin</Link>}<SignOut /></> : <><Link href="/login">Sign in</Link><Link href="/signup">Sign up</Link></>}
+    {authenticated ? <><Link href="/lists">My Lists</Link>{admin && <Link href="/admin">Admin</Link>}<SignOut /></> : <><Link href="/login">Sign in</Link><Link href="/signup">Sign up</Link></>}
   </nav>;
 }

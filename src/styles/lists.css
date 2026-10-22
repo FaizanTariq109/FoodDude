@@ -1,0 +1,24 @@
+.lists-page { padding-block:48px 72px; min-height:70vh; }
+.lists-page h1 { font-size:clamp(34px,5vw,60px); margin-block:16px; overflow-wrap:anywhere; }
+.lists-page>p,.list-card p,.list-save>p { color:var(--muted); line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
+.lists-page>.button { margin-top:24px; }
+.lists-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); gap:28px; margin-top:32px; align-items:start; }
+.lists-grid,.saved-entries { display:grid; gap:20px; min-width:0; }
+.list-card,.list-save { padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); min-width:0; }
+.list-card h2,.list-save h2 { font-size:27px; margin-block:10px; overflow-wrap:anywhere; }
+.list-card .text-link,.list-save>.text-link { display:inline-flex; margin-top:18px; min-height:44px; align-items:center; }
+.list-save { margin-block:24px; max-width:680px; }
+.list-form { margin-top:18px; }
+.list-form fieldset { display:flex; flex-direction:column; gap:10px; border:0; padding:0; min-width:0; }
+.list-form label { font-size:13px; font-weight:600; }
+.list-form label span { color:var(--muted); font-weight:400; }
+.list-form input:not([type=hidden]):not([type=checkbox]),.list-form textarea,.list-form select { width:100%; max-width:100%; min-height:46px; padding:12px; border:1px solid var(--control-border); border-radius:6px; background:var(--background); color:var(--foreground); font:inherit; font-size:16px; }
+.list-form textarea { resize:vertical; }
+.list-form button { align-self:start; margin-top:6px; min-height:44px; }
+.list-form fieldset:disabled { opacity:.65; }
+.list-confirm { display:flex; gap:12px; align-items:flex-start; line-height:1.7; }
+.list-confirm input { margin-top:5px; flex-shrink:0; width:18px; height:18px; }
+.list-message { margin-top:12px; border-left:3px solid var(--burgundy); padding:12px; background:var(--cream); font-size:13px; }
+.list-card summary { cursor:pointer; min-height:44px; padding-block:12px; }
+@media(max-width:1100px) { .lists-layout { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { .lists-page { padding-block:28px 48px; } .list-card,.list-save { padding:20px; } .lists-layout { gap:20px; } .site-header:has(.account-links a[href="/lists"]) .mobile-location { display:none; } }

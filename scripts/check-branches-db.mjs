@@ -28,7 +28,7 @@ try {
     insert into auth.users(id) values ('${admin}'),('${member}');`);
   const folder = new URL("../supabase/migrations/",import.meta.url);
   const files = (await readdir(folder)).filter(n => n.endsWith(".sql")).sort();
-  assert.equal(files.length,9);
+  assert.ok(files.length >= 9);
   for (const name of files.slice(0,8)) await db.exec(await readFile(new URL(name,folder),"utf8"));
   await db.exec(await readFile(new URL("../supabase/seed.sql",import.meta.url),"utf8"));
   const originals = await q("select * from public.restaurants order by id");

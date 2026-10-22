@@ -6,7 +6,7 @@ import { Suspense, type ReactNode } from "react";
 import { PreviewProvider } from "./preview-provider";
 import { brand } from "@/lib/brand";
 
-const navigation = [{ href: "/discover", label: "Discover", Icon: Compass }, { href: "/places", label: "My Places", Icon: Bookmark }, { href: "/offers", label: "Offers", Icon: Tag }];
+const navigation = [{ href: "/discover", label: "Discover", Icon: Compass }, { href: "/places", label: "Places", Icon: Bookmark }, { href: "/offers", label: "Offers", Icon: Tag }];
 function NavigationItems({ mobile = false, pathname, tonight = false }: { mobile?: boolean; pathname: string; tonight?: boolean }) {
   const items = mobile ? [...navigation, { href: "/discover?today=true", label: "Tonight", Icon: Moon }] : navigation;
   return <nav className={mobile ? "mobile-nav" : "desktop-nav"} aria-label={mobile ? "Mobile navigation" : "Main navigation"}>{items.map(({ href, label, Icon }) => {
