@@ -86,6 +86,8 @@
  .admin-navigation a { justify-content:center; width:40px; min-height:40px; border:1px solid var(--dark-border); }
  .admin-navigation a span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
  .mobile-nav { background:var(--elevated); }
+ /* Reserve the fixed bar inside the plum footer, not after it on the body. */
+ .site-footer { padding-bottom:var(--mobile-nav-clearance); }
  .mobile-nav a[aria-current] { border:1px solid #77505f; background:#46323e; }
  .footer-inner { grid-template-columns:1fr 1fr; gap:20px; }
  .footer-contact { grid-column:1/-1; justify-self:start; }
