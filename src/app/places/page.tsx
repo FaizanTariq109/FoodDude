@@ -25,5 +25,5 @@ async function PlacesList() {
   return <Explorer mode="places" source={enrichRestaurants(restaurants)} />;
 }
 export default function Page() {
-  return <Suspense fallback={<div className="container loading-state">Getting your Lahore list ready…</div>}><PlacesList /></Suspense>;
+  return <Suspense fallback={<div className="container loading-state">Loading restaurants…</div>}><PlacesList /></Suspense>;
 }

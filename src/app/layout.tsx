@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { AppShell } from "@/components/layout/app-shell";
 import { AccountNavigation } from "@/components/auth/account-navigation";
 import "@/styles/globals.css";
+import { getLikedPlaces } from "@/lib/data/liked-places";
 
 const display = localFont({ src: "./fonts/Fraunces.ttf", variable: "--font-display", display: "swap", weight: "100 900" });
 const interfaceFont = localFont({ src: "./fonts/Manrope.ttf", variable: "--font-interface", display: "swap", weight: "200 800" });
@@ -13,10 +14,11 @@ export const metadata: Metadata = {
   description: "A personal Lahore restaurant discovery and collection platform.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const likedPlaces = await getLikedPlaces();
   return (
     <html lang="en" className={`${display.variable} ${interfaceFont.variable}`}>
-      <body><AppShell accountNavigation={<Suspense fallback={null}><AccountNavigation /></Suspense>}>{children}</AppShell></body>
+      <body><AppShell likedPlaces={likedPlaces} accountNavigation={<Suspense fallback={null}><AccountNavigation /></Suspense>}>{children}</AppShell></body>
     </html>
   );
 }

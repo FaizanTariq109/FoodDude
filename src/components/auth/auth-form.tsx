@@ -8,14 +8,13 @@ export function AuthForm({ mode }: { mode: "signup" | "login" }) {
   const registering = mode === "signup";
   const [state, action, pending] = useActionState<AuthState, FormData>(registering ? signup : login, {});
   if (state.checkEmail) return <div className="auth-confirmation" role="status">
-    <p className="eyebrow">ONE MORE THING</p><h1>Check your email.</h1>
+    <p className="eyebrow">EMAIL CONFIRMATION</p><h1>Check your email.</h1>
     <p>If your address is eligible, you’ll receive a link to confirm your account. Check your inbox and spam folder.</p>
-    <Link href="/login" className="button button-dark">Go to sign in</Link>
+    <Link href="/login" className="button button-dark">Go to log in</Link>
   </div>;
   return <>
-    <p className="eyebrow">YOUR PLACE AT THE TABLE</p>
-    <h1>{registering ? "Make yourself at home." : "Good to see you."}</h1>
-    <p className="auth-intro">{registering ? "Create your FoodDude account. A few good evenings start here." : "Sign in to your FoodDude account."}</p>
+    <h1>{registering ? "Create account" : "Log in"}</h1>
+    <p className="auth-intro">{registering ? "Save restaurants in your own private lists." : "Sign in to your FoodDude account."}</p>
     <form action={action} className="auth-form" aria-label={registering ? "Sign up" : "Sign in"} aria-busy={pending}>
       {state.message && <p className="auth-message" role="alert">{state.message}</p>}
       <label htmlFor="auth-email">Email</label>

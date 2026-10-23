@@ -36,9 +36,9 @@ export async function mutateList(_previous: ListState, form: FormData): Promise<
         : client.from("user_list_entries").delete();
       result = await query.eq("id", entry).eq("list_id", id).select("id").maybeSingle();
     } else return { error: "Unknown list action." };
-    if (result.error) return { error: result.error.code === "23505" ? "This restaurant is already in that list." : "Unable to save. The list or public restaurant may no longer be available. Please reload and try again." };
+    if (result.error) return result.error.code === "23505" ? { error: "This restaurant is already in that list.", duplicate: true } : { error: "Unable to save. The list or public restaurant may no longer be available. Please reload and try again." };
     if (!result.data) return { error: "This list or saved restaurant is unavailable. Return to My Lists." };
-    revalidatePath("/lists", "layout");
+    revalidatePath("/", "layout");
     revalidatePath("/places/[slug]", "page");
   } catch (error) {
     return { error: error instanceof Error && /^(Name|Notes|Description|Invalid text)/.test(error.message) ? error.message : "Lists are temporarily unavailable. Please try again." };

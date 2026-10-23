@@ -24,5 +24,5 @@ async function DiscoverList() {
   return <Explorer mode="discover" source={enrichRestaurants(restaurants)} />;
 }
 export default function Page() {
-  return <Suspense fallback={<div className="container loading-state">Getting your Lahore list ready…</div>}><DiscoverList /></Suspense>;
+  return <Suspense fallback={<div className="container loading-state">Loading restaurants…</div>}><DiscoverList /></Suspense>;
 }

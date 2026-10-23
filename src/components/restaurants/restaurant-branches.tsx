@@ -2,7 +2,7 @@ import { ArrowUpRight, MapPin } from "lucide-react";
 import { mapsUrl, phoneHref, type PublicBranch } from "@/lib/branches";
 
 export function RestaurantBranches({ branches, unavailable = false }: { branches: PublicBranch[]; unavailable?: boolean }) {
-  return <section className="branch-panel" aria-label="Restaurant branches"><p className="eyebrow">FROM THE RESTAURANT CATALOGUE</p><h2>Where to go.</h2>
+  return <section className="branch-panel" aria-label="Restaurant branches"><p className="eyebrow">FROM THE RESTAURANT CATALOGUE</p><h2>Branches</h2>
     {unavailable ? <p className="muted">Branch information is temporarily unavailable. Please try again later.</p> : !branches.length ? <p className="muted">No verified branch information has been entered yet.</p> : branches.map(branch => {
       const maps = mapsUrl(branch.google_maps_url), phone = phoneHref(branch.phone);
       const title = branch.name || branch.area || "Branch";

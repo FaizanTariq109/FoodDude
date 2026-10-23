@@ -101,8 +101,18 @@ for (const file of ["src/app/admin/layout.tsx", "src/app/admin/page.tsx", "src/a
 identity = "member"; status = true; await requireAdmin();
 status = false; await assert.rejects(requireAdmin(), /Access denied/, "revocation is not cached");
 for (identity of ["anonymous", "member"]) for (status of [true, false, "error", "throw"]) {
-  const links = nodes(await AccountNavigation()).filter(n => n.type === "a").map(n => n.props.href);
+  const navigation = nodes(await AccountNavigation());
+  const links = navigation.filter(n => n.type === "a").map(n => n.props.href);
   assert.equal(links.includes("/admin"), identity === "member" && status === true);
+  const adminLink = navigation.find(n => n.type === "a" && n.props.href === "/admin");
+  if (adminLink) assert.equal(adminLink.props["aria-label"], "Admin Dashboard");
+  assert.equal(links.includes("/login"), identity === "anonymous");
+  assert.equal(links.includes("/signup"), identity === "anonymous");
+  assert.equal(navigation.some(n => n.type?.name === "SignOut"), identity === "member");
+  if (identity === "anonymous") {
+    assert.equal(navigation.find(n => n.type === "a" && n.props.href === "/login").props.children, "Log in");
+    assert.equal(navigation.find(n => n.type === "a" && n.props.href === "/signup").props.className, "account-button account-signup");
+  }
 }
 console.log("PASS server page/layout guards, revocation, legacy nested login route, administrator-only navigation.");
 for (identity of ["anonymous", "member", "throw"]) for (const route of ["/", "/places", "/discover", "/places/test", "/administrator"]) {
