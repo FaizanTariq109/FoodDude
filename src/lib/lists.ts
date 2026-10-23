@@ -2,7 +2,7 @@ export const listId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 export type ListState = { error?: string; success?: string; duplicate?: boolean };
 export interface UserList { id: string; name: string; description: string | null; kind?: "custom" | "liked" }
 export interface ListSummary extends UserList { restaurantCount: number }
-export interface ListRestaurant { id: string; name: string; slug: string; category: string; private?: boolean; area?: string | null }
+export interface ListRestaurant { id: string; name: string; slug: string; category: string; private?: boolean; area?: string | null; photo_object_id?: string | null }
 export const placeKey = (place: ListRestaurant) => place.private ? `private:${place.id}` : place.id;
 export interface SavedEntry { id: string; restaurant_id: string | null; user_place_id?: string | null; notes: string | null }
 export function listText(form: FormData, key: string, max: number, required = false) {

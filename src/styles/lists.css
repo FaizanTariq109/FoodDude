@@ -48,6 +48,21 @@
 .private-place-location { display:flex; align-items:baseline; gap:6px; color:var(--muted); margin-top:14px; font-size:12px; overflow-wrap:anywhere; }
 .private-place-text { color:var(--muted); font-size:12px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; margin-top:12px; }
 .private-place-map { margin-top:12px; font-size:12px; }
+.private-cover { position:relative; aspect-ratio:16/10; overflow:hidden; border-radius:6px; background:var(--cream); margin-bottom:20px; }
+.private-cover img { display:block; width:100%; height:100%; object-fit:cover; position:absolute; inset:0; opacity:0; }
+.private-cover.is-loaded img { opacity:1; }
+.private-cover-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; height:100%; padding:18px; color:var(--burgundy); text-align:center; font-size:11px; }
+.place-photo-editor { display:grid; gap:10px; margin-top:18px; }
+.place-photo-editor .private-cover { width:min(100%,280px); margin-bottom:0; }
+.place-photo-editor small { color:var(--muted); line-height:1.6; }
+.place-photo-editor input[type=file] { max-width:100%; font-size:12px; }
+.photo-removal-confirm { padding:12px; border:1px solid var(--border); border-radius:6px; }
+.photo-removal-confirm button { margin-right:15px; margin-top:10px; }
+.photo-storage { margin-top:28px; color:var(--muted); font-size:12px; }
+.photo-storage summary { min-height:44px; display:flex; align-items:center; text-decoration:underline; }
+.photo-storage form { margin-top:14px; }
+.photo-storage fieldset { border:0; padding:0; display:flex; flex-direction:column; align-items:start; gap:14px; }
+.photo-storage label { display:flex; gap:8px; align-items:start; line-height:1.6; }
 .private-place-card .private-place-text { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .picker-group-label { padding:10px 12px 6px; color:var(--burgundy); text-transform:uppercase; font-size:9px; letter-spacing:.1em; }
 .picker-panel li[role=group] { display:block; padding:0; cursor:default; }

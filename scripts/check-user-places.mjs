@@ -4,15 +4,16 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 import ts from 'typescript';
 const require=createRequire(import.meta.url),{renderToStaticMarkup}=require('react-dom/server');
-let authenticated=true,response={data:{id:'00000000-0000-4000-8000-000000000001'},error:null},calls=[],invalidations=[];
+const stamp='2026-10-23T00:00:00Z';
+let authenticated=true,response={data:{id:'00000000-0000-4000-8000-000000000001',updated_at:stamp,photo_object_id:null},error:null},calls=[],invalidations=[];
 let rows=[];
 const client={from(table){const call={table,filters:[]};calls.push(call);const chain={select(columns){call.columns=columns;return chain},insert(fields){call.operation='insert';call.fields=fields;return chain},update(fields){call.operation='update';call.fields=fields;return chain},delete(){call.operation='delete';return chain},eq(...filter){call.filters.push(filter);return chain},order(){return chain},range(start,end){call.start=start;call.end=end;return chain},abortSignal(){return chain},single:async()=>response,maybeSingle:async()=>response,then(resolve){return Promise.resolve({data:rows.slice(call.start,call.end+1),error:response.error}).then(resolve)}};return chain;}};
-const mocks={'server-only':{},'@/lib/data/lists':{listSession:async()=>({client,authenticated})},'next/cache':{revalidatePath:(...args)=>invalidations.push(args)},'next/link':{__esModule:true,default:'a'},'next/navigation':{useRouter:()=>({refresh(){}})}};
+const mocks={'server-only':{},'@/lib/data/lists':{listSession:async()=>({client,authenticated,userId:"00000000-0000-4000-8000-000000000001"})},'next/cache':{revalidatePath:(...args)=>invalidations.push(args)},'next/link':{__esModule:true,default:'a'},'next/navigation':{useRouter:()=>({refresh(){}})}};
 const cache=new Map();
 function load(file){file=path.resolve(file);if(cache.has(file))return cache.get(file);const mod={exports:{}};cache.set(file,mod.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','module','exports',code)(name=>{if(name in mocks)return mocks[name];if(name.startsWith('@/')||name.startsWith('.')){const stem=name.startsWith('@/')?path.resolve('src',name.slice(2)):path.resolve(path.dirname(file),name);return load(['.ts','.tsx'].map(ext=>stem+ext).find(f=>fs.existsSync(f)));}return require(name);},mod,mod.exports);cache.set(file,mod.exports);return mod.exports;}
 const {mutateUserPlace}=load('src/app/lists/places/actions.ts'),{getUserPlaces}=load('src/lib/data/user-places.ts'),{googleMapsUrl}=load('src/lib/user-places.ts');
 const page=load('src/app/lists/places/page.tsx').default;
-const form=fields=>{const f=new FormData();for(const [k,v] of Object.entries(fields))f.set(k,v);return f;};
+const form=fields=>{const f=new FormData();for(const [k,v] of Object.entries({expected_updated_at:stamp,...fields}))f.set(k,v);return f;};
 const id='00000000-0000-4000-8000-000000000001';
 authenticated=false;assert.match(renderToStaticMarkup(await page()),/Sign in to My Places/);assert.equal(calls.length,0);
 for(const operation of ['create','edit','delete'])assert.match((await mutateUserPlace({},form({operation,place_id:id,name:'Private',category:'cafe',confirm:'yes'}))).error,/sign in/);
@@ -22,9 +23,9 @@ assert.equal(calls.length,0);
 for(const value of ['https://www.google.com/maps?q=test','https://maps.app.goo.gl/example','https://maps.google.com/?q=test'])assert.equal(googleMapsUrl(value),value);
 for(const value of ['javascript:alert(1)','https://google.com.evil.invalid/maps','https://google.com@evil.invalid/maps','https://maps.app.goo.gl','https://www.google.com/maps\n','http://google.com/maps'])assert.throws(()=>googleMapsUrl(value));
 assert.equal(googleMapsUrl(null),null);
-for(const operation of ['create','edit']){calls=[];const result=await mutateUserPlace({},form({operation,place_id:id,name:'  Quiet cafe  ',category:'cafe',area:' ',notes:'Personal note',owner_id:'attacker',kind:'liked',google_maps_url:'https://maps.app.goo.gl/example'}));assert(result.success);assert.equal(calls[0].table,'user_places');assert.deepEqual(calls[0].fields,{name:'Quiet cafe',category:'cafe',area:null,address:null,google_maps_url:'https://maps.app.goo.gl/example',notes:'Personal note'});if(operation==='edit')assert.deepEqual(calls[0].filters,[['id',id]]);}
+for(const operation of ['create','edit']){calls=[];const result=await mutateUserPlace({},form({operation,place_id:id,name:'  Quiet cafe  ',category:'cafe',area:' ',notes:'Personal note',owner_id:'attacker',kind:'liked',google_maps_url:'https://maps.app.goo.gl/example'}));assert(result.success);assert.equal(calls[0].table,'user_places');const write=calls.find(c=>c.operation==='insert'||c.operation==='update'); const {id:createdId,photo_object_id:photoId,...fields}=write.fields;assert.deepEqual(fields,{name:'Quiet cafe',category:'cafe',area:null,address:null,google_maps_url:'https://maps.app.goo.gl/example',notes:'Personal note'});if(operation==='create'){assert.match(createdId,/^[0-9a-f-]{36}$/);assert.equal(photoId,null);}if(operation==='edit')assert.deepEqual(write.filters,[['id',id],['updated_at',stamp]]);}
 calls=[];assert.match((await mutateUserPlace({},form({operation:'delete',place_id:id}))).error,/Confirm/);assert.equal(calls.length,0);
-assert((await mutateUserPlace({},form({operation:'delete',place_id:id,confirm:'yes'}))).success);assert.deepEqual(calls[0].filters,[['id',id]]);
+assert((await mutateUserPlace({},form({operation:'delete',place_id:id,confirm:'yes'}))).success);assert.deepEqual(calls.find(c=>c.operation==='delete').filters,[['id',id],['updated_at',stamp]]);
 response={data:null,error:null};assert.match((await mutateUserPlace({},form({operation:'edit',place_id:id,name:'Stale',category:'cafe'}))).error,/unavailable/);
 response={data:null,error:{code:'42501',message:'SECRET'}};assert.doesNotMatch((await mutateUserPlace({},form({operation:'delete',place_id:id,confirm:'yes'}))).error,/SECRET/);
 assert(invalidations.some(([p,t])=>p==='/lists'&&t==='layout'));

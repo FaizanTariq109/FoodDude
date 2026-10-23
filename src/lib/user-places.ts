@@ -1,6 +1,7 @@
 export interface UserPlace {
   id: string; name: string; category: "restaurant" | "cafe"; area: string | null;
   address: string | null; google_maps_url: string | null; notes: string | null;
+  photo_object_id?: string | null; updated_at?: string;
 }
 export function googleMapsUrl(value: string | null): string | null {
   if (!value) return null;

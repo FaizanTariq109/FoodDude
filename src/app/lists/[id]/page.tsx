@@ -45,7 +45,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     readEntries(), readPublic(),
     getUserPlaces(client).then(places => ({ places, unavailable: false })).catch(() => ({ places: [], unavailable: true })),
   ]);
-  const restaurants: ListRestaurant[] = [...publicResult.restaurants, ...privateResult.places.map(place => ({ id: place.id, name: place.name, category: place.category, area: place.area, slug: "", private: true }))];
+  const restaurants: ListRestaurant[] = [...publicResult.restaurants, ...privateResult.places.map(place => ({ id: place.id, name: place.name, category: place.category, area: place.area, photo_object_id: place.photo_object_id, slug: "", private: true }))];
   const catalogueUnavailable = publicResult.catalogueUnavailable || privateResult.unavailable;
   return <ListDetail list={list} entries={entries} restaurants={restaurants} catalogueUnavailable={catalogueUnavailable} />;
 }

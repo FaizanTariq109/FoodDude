@@ -7,6 +7,7 @@ import { useListMutation } from "./use-list-mutation";
 import { RestaurantPicker } from "./restaurant-picker";
 import type { ListRestaurant, SavedEntry, UserList } from "@/lib/lists";
 import { placeKey } from "@/lib/lists";
+import { PlaceCover } from "./place-cover";
 
 function NoteEditor({ entry, listId, onClose, setBusy }: { entry: SavedEntry; listId: string; onClose: () => void; setBusy: (busy: boolean) => void }) {
   const [notes, setNotes] = useState(entry.notes ?? "");
@@ -30,7 +31,7 @@ function SavedRestaurantCard({ entry, listId, restaurant, catalogueUnavailable }
   const name = restaurant?.name ?? "Restaurant unavailable";
   const close = () => setEditing(false);
   const Icon = restaurant?.category === "cafe" ? Coffee : Utensils;
-  return <article className={`saved-place-card${editing ? " is-editing" : ""}`}><div className="saved-card-top"><span className="saved-category"><Icon size={13} />{restaurant?.category ?? "Saved place"}</span><div className="saved-card-actions"><button type="button" className="icon-button" ref={pencil} aria-label={`Edit private note for ${name}`} title="Edit private note" aria-expanded={editing} disabled={savingNote} onClick={() => setEditing(value => !value)}><Pencil size={15} /></button><RemoveEntry listId={listId} entryId={entry.id} name={name} disabled={savingNote} /></div></div>
+  return <article className={`saved-place-card${editing ? " is-editing" : ""}`}>{restaurant?.private&&<PlaceCover id={restaurant.id} objectId={restaurant.photo_object_id} name={name}/>}<div className="saved-card-top"><span className="saved-category"><Icon size={13} />{restaurant?.category ?? "Saved place"}</span><div className="saved-card-actions"><button type="button" className="icon-button" ref={pencil} aria-label={`Edit private note for ${name}`} title="Edit private note" aria-expanded={editing} disabled={savingNote} onClick={() => setEditing(value => !value)}><Pencil size={15} /></button><RemoveEntry listId={listId} entryId={entry.id} name={name} disabled={savingNote} /></div></div>
     <h2>{restaurant && !restaurant.private ? <Link href={`/places/${restaurant.slug}`}>{name}<ArrowUpRight size={17} /></Link> : name}</h2>
     {restaurant?.private && <p className="private-place-location"><LockKeyhole size={12} />Private place{restaurant.area ? ` · ${restaurant.area}` : ""}</p>}
     {!restaurant && <p className="saved-unavailable">{catalogueUnavailable ? "Restaurant details couldn’t be loaded. Your saved entry and note are safe." : "No longer publicly available. Your saved entry and note are kept."}</p>}
