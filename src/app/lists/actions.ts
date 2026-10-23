@@ -25,8 +25,9 @@ export async function mutateList(_previous: ListState, form: FormData): Promise<
       if (result.data) destination = "/lists";
     } else if (operation === "add") {
       const restaurant = String(form.get("restaurant_id") ?? "");
-      if (!listId.test(restaurant)) return { error: "Choose a public restaurant." };
-      result = await client.from("user_list_entries").insert({ list_id: id, restaurant_id: restaurant, notes: listText(form, "notes", 5000) }).select("id").single();
+      const privatePlace = String(form.get("user_place_id") ?? "");
+      if ((!!restaurant === !!privatePlace) || !listId.test(restaurant || privatePlace)) return { error: "Choose one public restaurant or private place." };
+      result = await client.from("user_list_entries").insert({ list_id: id, ...(privatePlace ? { user_place_id: privatePlace } : { restaurant_id: restaurant }), notes: listText(form, "notes", 5000) }).select("id").single();
     } else if (operation === "notes" || operation === "remove") {
       const entry = String(form.get("entry_id") ?? "");
       if (!listId.test(entry)) return { error: "This saved restaurant is unavailable." };
@@ -38,8 +39,13 @@ export async function mutateList(_previous: ListState, form: FormData): Promise<
     } else return { error: "Unknown list action." };
     if (result.error) return result.error.code === "23505" ? { error: "This restaurant is already in that list.", duplicate: true } : { error: "Unable to save. The list or public restaurant may no longer be available. Please reload and try again." };
     if (!result.data) return { error: "This list or saved restaurant is unavailable. Return to My Lists." };
-    revalidatePath("/", "layout");
-    revalidatePath("/places/[slug]", "page");
+    if (operation === "notes") {
+      // Membership and public hearts did not change; only this private page did.
+      revalidatePath(`/lists/${id}`);
+    } else {
+      revalidatePath("/", "layout");
+      revalidatePath("/places/[slug]", "page");
+    }
   } catch (error) {
     return { error: error instanceof Error && /^(Name|Notes|Description|Invalid text)/.test(error.message) ? error.message : "Lists are temporarily unavailable. Please try again." };
   }

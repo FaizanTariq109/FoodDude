@@ -20,7 +20,7 @@ const client = {
   },
 };
 const mocks = {
-  "server-only": {}, "next/link": { __esModule: true, default: "a" },
+  "server-only": {}, "next/link": { __esModule: true, default: "a", useLinkStatus: () => ({ pending: false }) },
   "@/lib/supabase/server": { createClient: async () => client },
   "@/components/lists/liked-places-provider": { useLikedPlaces: () => ui },
   "./liked-places-provider": { useLikedPlaces: () => ui },
@@ -59,6 +59,7 @@ assert.deepEqual((await readLikedPlaces()).restaurantIds, [restaurantId]);
 assert.deepEqual((await setRestaurantLiked(restaurantId, false)).snapshot.restaurantIds, []);
 rpcError = true; assert.doesNotMatch((await setRestaurantLiked(restaurantId, true)).error, /SECRET/); rpcError = false;
 readError = true; assert.deepEqual(await getLikedPlaces(), { userId, restaurantIds: [], unavailable: true }); readError = false;
+ids = [restaurantId, null]; assert.deepEqual((await getLikedPlaces()).restaurantIds, [restaurantId], "private-place entries never become public heart identities");
 ids = Array.from({ length: 205 }, (_, index) => String(index)); assert.equal((await getLikedPlaces()).restaurantIds.length, 205);
 console.log("PASS verified own-session reads, discriminator lookup, paginated private membership projection, anonymous/input rejection, explicit idempotent RPC payload, revalidation and safe failures");
 

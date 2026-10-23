@@ -13,13 +13,13 @@ let entries=[{id:rid,list_id:id,restaurant_id:rid,notes:'Book a quiet table by t
 const restaurants=[{id:rid,name:'Evening Kitchen',slug:'evening-kitchen'},{id:'00000000-0000-4000-8000-000000000004',name:'A Little Coffee',slug:'a-little-coffee'}];
 const client={auth:{getClaims:async()=>({data:{claims:authenticated?{sub:id}:{}},error:null})},from(table){
   const call={table,op:'read',filters:[],start:0,end:99};calls.push(call);
-  const result=()=>{const failed=fault||(catalogueFault&&table==='restaurants');let data=(table==='user_lists'?lists:table==='user_list_entries'?entries:restaurants);if(table==='user_list_entries'&&call.columns==='list_id')data=data.filter(e=>e.restaurant_id===call.filters.find(([key])=>key==='restaurant_id')?.[1]);return response??{data:failed?null:data.slice(call.start,call.end+1),error:failed?{code:'SECRET'}:null}};
+  const result=()=>{const failed=fault||(catalogueFault&&table==='restaurants');let data=(table==='user_lists'?lists:table==='user_list_entries'?entries:table==='user_places'?[]:restaurants);if(table==='user_list_entries'&&call.columns==='list_id')data=data.filter(e=>e.restaurant_id===call.filters.find(([key])=>key==='restaurant_id')?.[1]);return response??{data:failed?null:data.slice(call.start,call.end+1),error:failed?{code:'SECRET'}:null}};
   const chain={select(value){call.columns=value;return chain},insert(value){call.op='insert';call.fields=value;return chain},update(value){call.op='update';call.fields=value;return chain},delete(){call.op='delete';return chain},eq(...args){call.filters.push(args);return chain},order(){return chain},range(a,b){call.start=a;call.end=b;return chain},abortSignal(){return chain},maybeSingle:async()=>{const r=result();return {...r,data:Array.isArray(r.data)?r.data[0]??null:r.data}},single:async()=>{const r=result();return {...r,data:Array.isArray(r.data)?r.data[0]??null:r.data}},then(resolve,reject){return Promise.resolve(result()).then(resolve,reject)}};
   return chain;
 }};
 const mocks={
   'server-only':{},'@/lib/supabase/server':{createClient:async()=>client},
-  'next/link':{__esModule:true,default:'a'},
+  'next/link':{__esModule:true,default:'a',useLinkStatus:()=>({pending:false})},
   'next/navigation':{redirect(destination){throw Object.assign(Error('redirect'),{destination})},notFound(){throw Error('NOT_FOUND')},usePathname:()=>currentPath,useSearchParams:()=>new URLSearchParams(),useRouter:()=>({refresh(){}}),unstable_rethrow(error){if(error.destination)throw error}},
   'next/cache':{revalidatePath:(...args)=>invalidations.push(args)},
 };

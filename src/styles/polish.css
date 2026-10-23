@@ -1,7 +1,7 @@
 /* Shared After Hours surfaces. Opaque defaults remain readable without blur. */
 .home-hero { width:100%; max-width:none; margin:0; padding-inline:0; }
 .hero-inner { width:min(var(--page-width),calc(100% - 96px)); margin-inline:auto; }
-.app-content { display:flex; flex-direction:column; }
+.app-content { display:flex; flex-direction:column; min-width:0; }
 .app-content>main { flex:1; }
 .detail-main,.detail-sidebar { min-width:0; }
 .site-header { padding:30px 20px 24px; gap:0; }
@@ -26,8 +26,14 @@
 .rail-tonight { margin-top:auto; padding-top:20px; border:0; }
 .tonight-link { margin-top:20px; background:var(--elevated); color:var(--apricot); border:1px solid var(--dark-border); min-height:48px; padding:12px; }
 .tonight-link:hover { background:#44313e; color:var(--on-dark); transform:none; }
-.site-footer { display:grid; grid-template-columns:1fr auto 1fr; align-items:start; gap:24px 40px; padding-block:28px; }
-.site-footer.container { width:100%; margin:0; padding-inline:max(48px,calc((100% - var(--page-width))/2)); background:var(--elevated); border-top:1px solid var(--dark-border); color:var(--on-dark); }
+.site-footer { display:block; width:100%; max-width:none; margin:0; padding:0; background:var(--elevated); border-top:1px solid var(--dark-border); color:var(--on-dark); }
+.footer-inner { display:grid; grid-template-columns:1fr auto 1fr; align-items:start; gap:24px 40px; max-width:var(--page-width); padding-block:28px; min-width:0; }
+.desktop-nav a,.mobile-nav a,.collection-card { position:relative; }
+.link-pending { display:none; position:absolute; right:12px; top:50%; width:14px; height:14px; margin-top:-7px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; pointer-events:none; }
+.link-pending[data-pending=true] { display:block; animation:list-spin .9s linear infinite; }
+.collection-card>.link-pending { top:33px; right:24px; }
+.desktop-nav a:has([data-pending=true]) .nav-arrow,.collection-card:has([data-pending=true]) .collection-card-top>svg:last-child { opacity:0; }
+.mobile-nav .link-pending { right:5px; top:14px; width:10px; height:10px; margin:0; }
 .site-footer p,.site-footer .footer-brand small { color:var(--muted-dark); }
 .site-footer .wordmark span { color:var(--apricot); }
 .site-footer a:hover { color:var(--apricot); }
@@ -65,7 +71,7 @@
 }
 @media(max-width:1200px) {
  .hero-inner { width:calc(100% - 56px); }
- .site-footer.container { padding-inline:28px; }
+ .footer-inner { width:calc(100% - 56px); }
  .account-links .account-button { font-size:11px; padding-inline:6px; }
 }
 /* Auto overflow is a deliberate fallback for zoom and exceptionally short screens. */
@@ -81,7 +87,7 @@
  .admin-navigation a span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
  .mobile-nav { background:var(--elevated); }
  .mobile-nav a[aria-current] { border:1px solid #77505f; background:#46323e; }
- .site-footer { grid-template-columns:1fr 1fr; gap:20px; }
+ .footer-inner { grid-template-columns:1fr 1fr; gap:20px; }
  .footer-contact { grid-column:1/-1; justify-self:start; }
  @supports ((backdrop-filter:blur(8px)) or (-webkit-backdrop-filter:blur(8px))) {
   .mobile-nav { background:var(--glass-dark); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
@@ -89,7 +95,7 @@
 }
 @media(max-width:600px) {
  .hero-inner { width:calc(100% - 36px); }
- .site-footer.container { padding-inline:18px; }
+ .footer-inner { width:calc(100% - 36px); }
  .detail-save-actions { margin-top:18px; }
  .detail-section .section-heading { flex-wrap:wrap; align-items:center; gap:10px; }
  .detail-section h2 { overflow-wrap:anywhere; }
@@ -97,12 +103,13 @@
  .site-header .wordmark { font-size:23px; }
  .site-header .brand-edition { font-size:7px; letter-spacing:.25em; }
  .site-header:has(.account-navigation) { padding-inline:16px; gap:8px; }
- .site-footer { padding-block:24px; gap:20px; }
+ .footer-inner { padding-block:24px; gap:20px; }
  .site-footer nav a { min-height:36px; }
  .footer-contact>a { min-height:38px; }
 }
 @media(prefers-reduced-motion:reduce) {
  .restaurant-card:hover,.collection-card:hover { transform:none; }
+ .link-pending[data-pending=true] { animation:none; }
 }
 /* Desktop rail: restore the original spacing and warm Tonight shortcut. */
 @media(min-width:901px) {

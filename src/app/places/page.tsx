@@ -4,7 +4,7 @@ import { Explorer } from "@/components/discovery/explorer";
 import { connection } from "next/server";
 import { getRestaurants } from "@/lib/data/restaurants";
 import { enrichRestaurants } from "@/data/prototype/restaurants";
-export const metadata: Metadata = { title: "My Places" };
+export const metadata: Metadata = { title: "Restaurants" };
 async function PlacesList() {
   // Keep environment validation and database access out of prerendering.
   await connection();

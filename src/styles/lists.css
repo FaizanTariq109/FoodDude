@@ -42,6 +42,16 @@
 .list-form label span { color:var(--muted); font-weight:400; }
 .list-form input:not([type=hidden]),.list-form textarea { width:100%; min-height:44px; padding:11px 12px; border:1px solid var(--control-border); border-radius:6px; background:var(--surface); color:var(--foreground); font:inherit; font-size:16px; }
 .list-form textarea { resize:vertical; }
+.list-form select { min-height:44px; padding:10px 12px; border:1px solid var(--control-border); border-radius:6px; background:var(--surface); color:var(--foreground); font:inherit; font-size:16px; }
+.my-places-action { margin-bottom:24px; }
+.private-places-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; }
+.private-place-location { display:flex; align-items:baseline; gap:6px; color:var(--muted); margin-top:14px; font-size:12px; overflow-wrap:anywhere; }
+.private-place-text { color:var(--muted); font-size:12px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; margin-top:12px; }
+.private-place-map { margin-top:12px; font-size:12px; }
+.private-place-card .private-place-text { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.picker-group-label { padding:10px 12px 6px; color:var(--burgundy); text-transform:uppercase; font-size:9px; letter-spacing:.1em; }
+.picker-panel li[role=group] { display:block; padding:0; cursor:default; }
+.picker-panel li[role=group]>ul { max-height:none; overflow:visible; padding:0; }
 .list-form-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:15px; }
 .list-form-actions .button { min-height:42px; padding:11px 17px; }
 .list-form fieldset:disabled,button:disabled { cursor:wait; }

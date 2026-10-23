@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import ts from 'typescript';
+const require=createRequire(import.meta.url),{renderToStaticMarkup}=require('react-dom/server');
+let authenticated=true,response={data:{id:'00000000-0000-4000-8000-000000000001'},error:null},calls=[],invalidations=[];
+let rows=[];
+const client={from(table){const call={table,filters:[]};calls.push(call);const chain={select(columns){call.columns=columns;return chain},insert(fields){call.operation='insert';call.fields=fields;return chain},update(fields){call.operation='update';call.fields=fields;return chain},delete(){call.operation='delete';return chain},eq(...filter){call.filters.push(filter);return chain},order(){return chain},range(start,end){call.start=start;call.end=end;return chain},abortSignal(){return chain},single:async()=>response,maybeSingle:async()=>response,then(resolve){return Promise.resolve({data:rows.slice(call.start,call.end+1),error:response.error}).then(resolve)}};return chain;}};
+const mocks={'server-only':{},'@/lib/data/lists':{listSession:async()=>({client,authenticated})},'next/cache':{revalidatePath:(...args)=>invalidations.push(args)},'next/link':{__esModule:true,default:'a'},'next/navigation':{useRouter:()=>({refresh(){}})}};
+const cache=new Map();
+function load(file){file=path.resolve(file);if(cache.has(file))return cache.get(file);const mod={exports:{}};cache.set(file,mod.exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','module','exports',code)(name=>{if(name in mocks)return mocks[name];if(name.startsWith('@/')||name.startsWith('.')){const stem=name.startsWith('@/')?path.resolve('src',name.slice(2)):path.resolve(path.dirname(file),name);return load(['.ts','.tsx'].map(ext=>stem+ext).find(f=>fs.existsSync(f)));}return require(name);},mod,mod.exports);cache.set(file,mod.exports);return mod.exports;}
+const {mutateUserPlace}=load('src/app/lists/places/actions.ts'),{getUserPlaces}=load('src/lib/data/user-places.ts'),{googleMapsUrl}=load('src/lib/user-places.ts');
+const page=load('src/app/lists/places/page.tsx').default;
+const form=fields=>{const f=new FormData();for(const [k,v] of Object.entries(fields))f.set(k,v);return f;};
+const id='00000000-0000-4000-8000-000000000001';
+authenticated=false;assert.match(renderToStaticMarkup(await page()),/Sign in to My Places/);assert.equal(calls.length,0);
+for(const operation of ['create','edit','delete'])assert.match((await mutateUserPlace({},form({operation,place_id:id,name:'Private',category:'cafe',confirm:'yes'}))).error,/sign in/);
+assert.equal(calls.length,0);authenticated=true;
+for(const fields of [{name:''},{category:'bar'},{google_maps_url:'javascript:alert(1)'},{area:'x'.repeat(161)},{address:'x'.repeat(1001)},{notes:'x'.repeat(5001)}]){assert((await mutateUserPlace({},form({operation:'create',name:'Private',category:'cafe',...fields}))).error);}
+assert.equal(calls.length,0);
+for(const value of ['https://www.google.com/maps?q=test','https://maps.app.goo.gl/example','https://maps.google.com/?q=test'])assert.equal(googleMapsUrl(value),value);
+for(const value of ['javascript:alert(1)','https://google.com.evil.invalid/maps','https://google.com@evil.invalid/maps','https://maps.app.goo.gl','https://www.google.com/maps\n','http://google.com/maps'])assert.throws(()=>googleMapsUrl(value));
+assert.equal(googleMapsUrl(null),null);
+for(const operation of ['create','edit']){calls=[];const result=await mutateUserPlace({},form({operation,place_id:id,name:'  Quiet cafe  ',category:'cafe',area:' ',notes:'Personal note',owner_id:'attacker',kind:'liked',google_maps_url:'https://maps.app.goo.gl/example'}));assert(result.success);assert.equal(calls[0].table,'user_places');assert.deepEqual(calls[0].fields,{name:'Quiet cafe',category:'cafe',area:null,address:null,google_maps_url:'https://maps.app.goo.gl/example',notes:'Personal note'});if(operation==='edit')assert.deepEqual(calls[0].filters,[['id',id]]);}
+calls=[];assert.match((await mutateUserPlace({},form({operation:'delete',place_id:id}))).error,/Confirm/);assert.equal(calls.length,0);
+assert((await mutateUserPlace({},form({operation:'delete',place_id:id,confirm:'yes'}))).success);assert.deepEqual(calls[0].filters,[['id',id]]);
+response={data:null,error:null};assert.match((await mutateUserPlace({},form({operation:'edit',place_id:id,name:'Stale',category:'cafe'}))).error,/unavailable/);
+response={data:null,error:{code:'42501',message:'SECRET'}};assert.doesNotMatch((await mutateUserPlace({},form({operation:'delete',place_id:id,confirm:'yes'}))).error,/SECRET/);
+assert(invalidations.some(([p,t])=>p==='/lists'&&t==='layout'));
+const {mutateList}=load('src/app/lists/actions.ts');response={data:{id},error:null};calls=[];
+assert((await mutateList({},form({operation:'add',list_id:id,user_place_id:id,notes:'List-only note',owner_id:'attacker'}))).success);
+assert.deepEqual(calls[0].fields,{list_id:id,user_place_id:id,notes:'List-only note'});calls=[];
+assert((await mutateList({},form({operation:'add',list_id:id,user_place_id:id,restaurant_id:id}))).error);assert.equal(calls.length,0);
+response={data:null,error:{message:'SECRET'}};await assert.rejects(getUserPlaces(client),/private places couldn’t be loaded/);
+response={data:null,error:null};rows=Array.from({length:205},(_,i)=>({id:String(i),name:'Private '+i,category:'cafe',area:null,address:null,notes:null,google_maps_url:null}));assert.equal((await getUserPlaces(client)).length,205);
+assert(calls.filter(c=>c.columns).every(c=>!c.columns.includes('owner_id')));
+rows=[];assert.match(renderToStaticMarkup(await page()),/No private places yet/);assert.doesNotMatch(renderToStaticMarkup(await page()),/<textarea|<form/);
+rows=[{id,name:'Owner private cafe',category:'cafe',area:null,address:null,notes:'Only owner',google_maps_url:'javascript:alert(1)'}];const html=renderToStaticMarkup(await page());assert.match(html,/Owner private cafe/);assert.doesNotMatch(html,/javascript:|Lahore|<img|\/places\/00000000/);
+for(const file of ['src/app/discover/page.tsx','src/app/places/page.tsx','src/lib/data/restaurants.ts']) assert.doesNotMatch(fs.readFileSync(file,'utf8'),/user_places|getUserPlaces/);
+console.log('PASS private-place authentication/actions, untrusted owner ignored, validation/Maps safety, confirmation, stale errors, pagination, compact private-only SSR and public-route separation');

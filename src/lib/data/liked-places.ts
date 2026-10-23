@@ -16,7 +16,7 @@ export async function getLikedPlaces(): Promise<LikedPlacesSnapshot> {
       const { data, error } = await client.from("user_list_entries").select("restaurant_id")
         .eq("list_id", list.id).order("id").range(offset, offset + 99).abortSignal(AbortSignal.timeout(15_000));
       if (error) throw Error("Liked Places unavailable");
-      restaurantIds.push(...data.map(row => row.restaurant_id));
+      restaurantIds.push(...data.flatMap(row => row.restaurant_id ? [row.restaurant_id] : []));
       if (data.length < 100) return { userId, restaurantIds, unavailable: false };
     }
   } catch { return { userId, restaurantIds: [], unavailable: true }; }

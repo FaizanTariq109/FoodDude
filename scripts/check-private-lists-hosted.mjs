@@ -9,7 +9,7 @@ const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NE
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   realtime: { transport: WebSocket },
 });
-for (const table of ["user_lists", "user_list_entries", "profiles"]) {
+for (const table of ["user_lists", "user_list_entries", "user_places", "profiles"]) {
   const { error } = await client.from(table).select("id").limit(1);
   assert.equal(error?.code, "42501", `${table}: anonymous SELECT must be denied`);
   console.log(`PASS anonymous ${table} SELECT denied`);
