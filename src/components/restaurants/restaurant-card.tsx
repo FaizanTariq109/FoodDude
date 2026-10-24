@@ -11,16 +11,17 @@ import { prototypeBanks } from "@/data/prototype/banks";
 import { priceLevelLabel } from "@/lib/restaurants/official";
 
 export function PhotoFrame({ photo, className = "", priority = false, sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw" }: { photo?: Photo; className?: string; priority?: boolean; sizes?: string }) {
-  const [failed, setFailed] = useState(false);
-  return <div className={"photo-frame " + className}>{photo && !failed ? <Image src={photo.src} alt={photo.alt} fill sizes={sizes} preload={priority} onError={() => setFailed(true)} /> : <div className="photo-placeholder"><Utensils size={32} strokeWidth={1} /><span>A place on your list</span><small>Photography to come</small></div>}</div>;
+  const [failed, setFailed] = useState<string|null>(null);
+  const official=photo&&"official" in photo&&photo.official===true&&"cardSrc" in photo;
+  return <div className={"photo-frame " + className}>{photo && failed!==photo.src ? <Image src={photo.src} alt={photo.alt} fill sizes={sizes} preload={priority} loading={priority?undefined:"lazy"} loader={official?({width})=>width<=640?String(photo.cardSrc):photo.src:undefined} onError={() => setFailed(photo.src)} /> : <div className="photo-placeholder"><Utensils size={32} strokeWidth={1} /><span>A place on your list</span><small>Photography to come</small></div>}</div>;
 }
 export function RestaurantCard({ place, personal = false, offer: suppliedOffer }: { place: Place; personal?: boolean; offer?: DemoOffer | null }) {
   const offer = suppliedOffer === undefined ? demoOffers.find(o => o.restaurantSlug === place.slug) : suppliedOffer;
   const bank = prototypeBanks.find(b => b.id === offer?.bankId);
   return <article className="restaurant-card">
-    <div className="card-visual"><Link href={"/places/" + place.slug} aria-label={"Explore " + place.name}><PhotoFrame photo={place.demo?.photo} /></Link>
+    <div className="card-visual"><Link href={"/places/" + place.slug} aria-label={"Explore " + place.name}><PhotoFrame photo={place.photos?.[0]??place.demo?.photo} /></Link>
       <FavoriteButton restaurantId={place.id} name={place.name} />
-      {place.demo ? <span className="image-caption">Illustrative photo</span> : <span className="collection-badge"><Bookmark size={12} /> Public catalogue</span>}
+      {place.photos?.length ? <span className="image-caption">Restaurant photo</span> : place.demo ? <span className="image-caption">Illustrative photo</span> : <span className="collection-badge"><Bookmark size={12} /> Public catalogue</span>}
       {offer && !personal && <span className="image-offer"><span className="tiny-dot" />{offer.label}<small>DEMO</small></span>}
     </div>
     <div className="card-content"><p className="eyebrow card-category">{place.category === "cafe" ? <Coffee size={12} /> : <Utensils size={12} />}{place.category}</p>

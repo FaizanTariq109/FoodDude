@@ -13,6 +13,7 @@ const query = Object.fromEntries(["from", "select", "eq", "abortSignal", "order"
 query.maybeSingle = async () => response;
 query.then = (resolve, reject) => Promise.resolve(response).then(resolve, reject);
 const mocks = {
+  "@/lib/data/restaurant-photos": { readPublicPhotos: async () => new Map() },
   "server-only": {},
   "@/lib/supabase/server": { createClient: async () => ({ from: query.from }) },
   "next/server": { connection: async () => {} },

@@ -627,6 +627,7 @@
 }
 .gallery-controls {
   display:flex;
+  flex-wrap:wrap;
   justify-content:center;
   gap:8px;
   margin:15px 0

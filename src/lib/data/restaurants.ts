@@ -2,6 +2,8 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import type { RestaurantCategory } from "@/types";
+import { readPublicPhotos } from "@/lib/data/restaurant-photos";
+import type { CataloguePhoto } from "@/lib/restaurant-photos";
 
 export interface PublicRestaurant {
   id: string;
@@ -12,6 +14,7 @@ export interface PublicRestaurant {
   price_level: number | null;
   website_url: string | null;
   instagram_url: string | null;
+  photos?: CataloguePhoto[];
 }
 
 // Explicit projection: never select legacy personal fields or use table-wide '*'.
@@ -38,17 +41,18 @@ export async function getRestaurantBySlug(slug: string): Promise<PublicRestauran
 
   if (error) throw new Error("Unable to load restaurant.");
   if (!data) return null;
-  return publicRestaurant(data);
+  const photos=await readPublicPhotos(supabase,[data.id]);
+  return {...publicRestaurant(data),...(photos.has(data.id)?{photos:photos.get(data.id)}:{})};
 }
 
 export async function getRestaurants(): Promise<PublicRestaurant[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const [{ data, error }, photos] = await Promise.all([supabase
     .from("restaurants")
     .select(publicColumns)
     .order("slug")
-    .abortSignal(AbortSignal.timeout(15_000));
+    .abortSignal(AbortSignal.timeout(15_000)),readPublicPhotos(supabase,undefined,true)]);
 
   if (error) throw new Error("Unable to load restaurants.");
-  return (data ?? []).map(publicRestaurant);
+  return (data ?? []).map(row=>({...publicRestaurant(row),...(photos.has(row.id)?{photos:photos.get(row.id)}:{})}));
 }

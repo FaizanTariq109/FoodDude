@@ -63,6 +63,7 @@ export function enrichRestaurants(records: PublicRestaurant[]): Place[] {
     price_level: record.price_level ?? null,
     website_url: record.website_url ?? null,
     instagram_url: record.instagram_url ?? null,
+    photos: record.photos,
     // Preserve the illustrative collection order for existing sorting controls.
     position: positions.get(record.slug) ?? restaurantsSeed.length + index,
     demo: enrichment[record.slug],
